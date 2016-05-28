@@ -1,0 +1,10 @@
+# IDEA files
+.idea/
+*.iml
+*.log
+
+# References & design prototypes
+ref/
+
+# Python local environment
+env/
