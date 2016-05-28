@@ -8,3 +8,5 @@ ref/
 
 # Python local environment
 env/
+hel/__pycache__/
+hel.egg-info/
