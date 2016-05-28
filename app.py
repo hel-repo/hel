@@ -12,7 +12,11 @@ if __name__ == '__main__':
     config.add_route('hello', '/hello/{name}')
     config.add_view(hello_world, route_name='hello')
     app = config.make_wsgi_app()
-    ip = os.environ['OPENSHIFT_PYTHON_IP']
-    port = int(os.environ['OPENSHIFT_PYTHON_PORT'])
+    try:
+        ip = os.environ['OPENSHIFT_PYTHON_IP']
+        port = int(os.environ['OPENSHIFT_PYTHON_PORT'])
+    except KeyError:
+        ip = 'localhost'
+        port = 8080
     server = make_server(ip, port, app)
     server.serve_forever()
