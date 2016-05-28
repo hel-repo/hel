@@ -44,7 +44,7 @@
               <li class="current-version">v 0.01</li>
               <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/MoonlightOwl/hel/wiki">Docs</a></li>
               <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/MoonlightOwl/hel">Github Project</a></li>
-              <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="irc://irc.esper.net#cc.ru">IRC Channel</a></li>
+              <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="http://webchat.esper.net/?channels=#cc.ru">IRC Channel</a></li>
               <li><i class="glyphicon glyphicon-home icon-muted"></i><a href="http://computercraft.ru">ComputerCraft.ru Project</a></li>
             </ul>
           </div>
