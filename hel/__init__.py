@@ -28,7 +28,7 @@ def main(global_config, **settings):
     config.add_renderer('json', MongoJSONRenderer)
     config.add_static_view('static', 'static', cache_max_age=3600)
 
-    # Setup MondoDB
+    # Setup MongoDB
     if 'MONGODB_URL' in os.environ:
         url = os.environ['MONGODB_URL']
     else:
