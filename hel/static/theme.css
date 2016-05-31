@@ -2,8 +2,6 @@
 body {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: 300;
-  color: #ffffff;
-  background: #bc2131;
 }
 h1,
 h2,
@@ -26,11 +24,24 @@ p {
 .font-bold {
   font-weight: 700;
 }
+.gray {
+  background: #E6DCDD;
+}
+.red {
+  color: #ffffff;
+  background: #bc2131;
+}
 .starter-template {
-  margin-top: 200px;
+  margin-top: 20px;
+}
+.starter-template .logo{
+  margin-bottom: -120px;
+  padding: 10px;
+  z-index: 100;
 }
 .starter-template .content {
-  margin-left: 10px;
+  margin-left: 310px;
+  padding: 20px;
 }
 .starter-template .content h1 {
   margin-top: 10px;
@@ -38,19 +49,15 @@ p {
 }
 .starter-template .content h1 .smaller {
   font-size: 40px;
-  color: #f2b7bd;
 }
 .starter-template .content .lead {
   font-size: 25px;
-  color: #f2b7bd;
 }
-.starter-template .content .lead .font-normal {
-  color: #ffffff;
-}
+.starter-template .content .lead .font-normal {}
 .starter-template .links {
   float: right;
   right: 0;
-  margin-top: 125px;
+  padding: 10px 20px;
 }
 .starter-template .links ul {
   display: block;
@@ -87,11 +94,15 @@ p {
 }
 .starter-template .copyright {
   margin-top: 10px;
+  padding: 10px 20px;
   font-size: 0.9em;
   color: #f2b7bd;
   text-transform: lowercase;
   float: right;
   right: 0;
+}
+.starter-template .card {
+  margin: 10px 0px 10px 0px;
 }
 @media (max-width: 1199px) {
   .starter-template .content h1 {

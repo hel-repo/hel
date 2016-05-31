@@ -26,21 +26,54 @@
   <body>
     <div class="starter-template">
       <div class="container">
-        <div class="row">
-          <div class="col-md-3">
-            <img class="logo" src="${request.static_url('hel:static/logo.png')}" alt="pyramid web framework">
-          </div>
-          <div class="col-md-9">
-            <div class="hidden-xs hidden-sm"><br><br><br></div>
-            <div class="content">
-              <h1><span class="font-semi-bold">Hel</span> <span class="smaller">package repository</span></h1>
-              <p class="lead">Welcome to <span class="font-normal">${project}</span>, and enjoy your stay!</p>
-              <button type="button" class="btn btn-lg btn-danger">Log In</button>
+        <div class="row red">
+          <img class="logo" src="${request.static_url('hel:static/logo.png')}">
+        </div>
+        <div class="row gray">
+          <div class="content">
+            <h1><span class="font-semi-bold">Hel</span> <span class="smaller">package repository</span></h1>
+            <p class="lead">Welcome to <span class="font-normal">${project}</span>, and enjoy your stay!</p>
+
+            <form class="form-signin form-horizontal">
+              <label for="inputEmail" class="sr-only">Email address</label>
+              <div class="col-sm-4" style="padding-left: 0px;">
+                <input type="email" id="inputEmail" class="form-control input-lg" placeholder="Email address" required autofocus>
+              </div>
+              <label for="inputPassword" class="sr-only">Password</label>
+              <div class="col-sm-4" style="padding-left: 0px;">
+                <input type="password" id="inputPassword" class="form-control input-lg" placeholder="Password" required>
+              </div>
+              <button type="submit" class="btn btn-lg btn-danger">Sign in</button>
               <button type="button" class="btn btn-lg btn-danger">Register</button>
+            </form>
+          </div>
+        </div>
+        <div class="row content" style="padding: 0px;">
+          <div>
+            <div style="overflow: hidden;">
+              <div class="col-sm-6 card">
+                <h2>Flexible</h2>
+                <p>Link packages from any place (Pastebin, GitHub, Gist, direct link e.t.c).
+                  Configure dependencies, versions, content tags</p>
+              </div>
+              <div class="col-sm-6 card">
+                <h2>Open Source</h2>
+                <p>Take part in development of repository. Full source code of project is available on GitHub</p>
+              </div>
+            </div>
+            <div style="overflow: hidden;">
+              <div class="col-sm-6 card">
+                <h2>Comfortable</h2>
+                <p>Download and deploy packages with a handy Package Manager tool</p>
+              </div>
+              <div class="col-sm-6 card">
+                <h2>Easy</h2>
+                <p>Even your grandma can do it!</p>
+              </div>
             </div>
           </div>
         </div>
-        <div class="row">
+        <div class="row red">
           <div class="links">
             <ul>
               <li class="current-version">v 0.01</li>
@@ -51,9 +84,9 @@
             </ul>
           </div>
         </div>
-        <div class="row">
+        <div class="row red">
           <div class="copyright">
-            Copyright &copy; Totoro
+            Copyright &copy; 2016 Totoro
           </div>
         </div>
       </div>
