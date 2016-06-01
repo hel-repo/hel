@@ -36,7 +36,7 @@ class MongoCollection(Resource):
 
 
 class MongoDocument(Resource):
-    spec = {}
+    spec = None
 
     def __init__(self, ref, parent):
         Resource.__init__(self, ref, parent)
@@ -48,13 +48,13 @@ class MongoDocument(Resource):
         return self.spec or {'_id': ObjectId(self.ref)}
 
     def retrieve(self):
-        return self.collection.find_one(self.spec)
+        return self.collection.find_one(self.get_spec())
 
     def update(self, *args, **kwargs):
-        self.collection.update(self.spec, args[0])
+        self.collection.update(self.get_spec(), args[0])
 
     def delete(self):
-        self.collection.remove(self.spec)
+        self.collection.remove(self.get_spec())
 
 
 class Package(MongoDocument):
