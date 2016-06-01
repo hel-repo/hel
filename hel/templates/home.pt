@@ -57,12 +57,12 @@
             <div style="overflow: hidden;">
               <div class="col-sm-5 card">
                 <h2>Flexible</h2>
-                <p>Link packages from any place (Pastebin, GitHub, Gist, direct link e.t.c).
+                <p>Link packages from any place (Pastebin, GitHub, Gist, direct link, etc.).
                   Configure dependencies, versions, content tags</p>
               </div>
               <div class="col-sm-5 card">
                 <h2>Open Source</h2>
-		<p>Take part in development of the repository. Full source code of the project is available on <a href="https://github.com/MoonlightOwl/hel">GitHub</a></p>
+                <p>Take part in development of the repository. Full source code of the project is available on <a href="https://github.com/MoonlightOwl/hel">GitHub</a></p>
               </div>
             </div>
             <div style="overflow: hidden;">
