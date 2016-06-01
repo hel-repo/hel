@@ -36,11 +36,16 @@ class MongoCollection(Resource):
 
 
 class MongoDocument(Resource):
+    spec = {}
+
     def __init__(self, ref, parent):
         Resource.__init__(self, ref, parent)
 
         self.collection = parent.collection
-        self.spec = {'_id': ObjectId(ref)}
+        self.ref = ref
+
+    def get_spec(self):
+        return self.spec or {'_id': ObjectId(self.ref)}
 
     def retrieve(self):
         return self.collection.find_one(self.spec)
@@ -55,6 +60,7 @@ class MongoDocument(Resource):
 class Package(MongoDocument):
     def __init__(self, ref, parent):
         MongoDocument.__init__(self, ref, parent)
+        self.spec = {'name': ref}
 
 
 class Packages(MongoCollection):
@@ -68,6 +74,7 @@ class Packages(MongoCollection):
 class User(MongoDocument):
     def __init__(self, ref, parent):
         MongoDocument.__init__(self, ref, parent)
+        self.spec = {'nickname': ref}
 
 
 class Users(MongoCollection):
@@ -83,5 +90,5 @@ class Root(Resource):
         Resource.__init__(self, ref='', parent=None)
 
         self.request = request
-        self.add_child('users', Users)
         self.add_child('packages', Packages)
+        self.add_child('users', Users)
