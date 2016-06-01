@@ -15,6 +15,14 @@ h6 {
 p {
   font-weight: 300;
 }
+.container {
+  width: 100%;
+}
+.form-control:focus {
+  border-color: #bc2131;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(188,33,49,0.6);
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),0 0 8px rgba(188,33,49,0.6);
+}
 .font-normal {
   font-weight: 400;
 }
@@ -25,17 +33,14 @@ p {
   font-weight: 700;
 }
 .gray {
-  background: #E6DCDD;
+  background: #E9E9E9;
 }
 .red {
   color: #ffffff;
   background: #bc2131;
 }
-.starter-template {
-  margin-top: 20px;
-}
 .starter-template .logo{
-  margin-bottom: -120px;
+  margin-bottom: -160px;
   padding: 10px;
   z-index: 100;
 }
@@ -116,11 +121,14 @@ p {
   }
 }
 @media (max-width: 991px) {
-  .starter-template {
-    margin-top: 0;
+  #toprow {
+    height: 0;
   }
   .starter-template .logo {
     margin: 40px auto;
+    position: absolute;
+    width: 290px;
+    margin-top: 0 !important;
   }
   .starter-template .content {
     margin-left: 0;
@@ -146,6 +154,9 @@ p {
   }
   .starter-template .content .lead {
     font-size: 16px;
+  }
+  .starter-template .logo {
+    display: none;
   }
   .starter-template .links {
     margin-top: 40px;
