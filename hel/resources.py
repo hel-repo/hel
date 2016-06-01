@@ -27,8 +27,8 @@ class MongoCollection(Resource):
         request = root.request
         return request.db[self.collection_name]
 
-    def retrieve(self):
-        return [elem for elem in self.collection.find()]
+    def retrieve(self, query=None):
+        return [elem for elem in self.collection.find(query)]
 
     def create(self, document):
         object_id = self.collection.insert(document)

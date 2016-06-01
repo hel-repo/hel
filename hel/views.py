@@ -50,7 +50,7 @@ def create_package(context, request):
 
 @view_config(request_method='GET', context=Packages, renderer='json')
 def list_packages(context, request):
-    return context.retrieve()
+    return context.retrieve(request.GET)
 
 
 # User controller
@@ -93,4 +93,4 @@ def create_user(context, request):
 
 @view_config(request_method='GET', context=Users, renderer='json')
 def list_users(context, request):
-    return context.retrieve()
+    return context.retrieve(request.GET)
