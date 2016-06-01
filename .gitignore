@@ -10,3 +10,7 @@ ref/
 env/
 hel/__pycache__/
 hel.egg-info/
+
+# Vim swap and tag files
+*.swp
+**/.tags
