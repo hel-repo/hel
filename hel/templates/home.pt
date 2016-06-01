@@ -62,7 +62,7 @@
               </div>
               <div class="col-sm-5 card">
                 <h2>Open Source</h2>
-                <p>Take part in development of repository. Full source code of project is available on GitHub</p>
+		<p>Take part in development of the repository. Full source code of the project is available on <a href="https://github.com/MoonlightOwl/hel">GitHub</a></p>
               </div>
             </div>
             <div style="overflow: hidden;">
