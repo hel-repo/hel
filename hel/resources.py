@@ -18,6 +18,9 @@ class Resource(dict):
 
 
 class MongoCollection(Resource):
+    collection_name = ""
+    resource_name = Resource
+
     @property
     def collection(self):
         root = find_root(self)
@@ -39,15 +42,11 @@ class MongoDocument(Resource):
         self.collection = parent.collection
         self.spec = {'_id': ObjectId(ref)}
 
-
     def retrieve(self):
         return self.collection.find_one(self.spec)
 
-    def update(self, data, patch=False):
-        if patch:
-            data = {'$set': data}
-
-        self.collection.update(self.spec, data)
+    def update(self, *args, **kwargs):
+        self.collection.update(self.spec, args[0])
 
     def delete(self):
         self.collection.remove(self.spec)
@@ -59,11 +58,24 @@ class Package(MongoDocument):
 
 
 class Packages(MongoCollection):
-    collection_name = 'package'
+    collection_name = 'packages'
     resource_name = Package
 
     def __getitem__(self, ref):
         return Package(ref, self)
+
+
+class User(MongoDocument):
+    def __init__(self, ref, parent):
+        MongoDocument.__init__(self, ref, parent)
+
+
+class Users(MongoCollection):
+    collection_name = 'users'
+    resource_name = User
+
+    def __getitem__(self, ref):
+        return User(ref, self)
 
 
 class Root(Resource):
@@ -71,4 +83,5 @@ class Root(Resource):
         Resource.__init__(self, ref='', parent=None)
 
         self.request = request
-        self.add_child('package', Packages)
+        self.add_child('users', Users)
+        self.add_child('packages', Packages)
