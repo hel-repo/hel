@@ -1,11 +1,13 @@
 import os
+import json
+
+from pyramid.config import Configurator
+from pyramid.authorization import ACLAuthorizationPolicy
+from pymongo import MongoClient
+from bson import json_util
 
 from hel.resources import Root
-from pyramid.config import Configurator
-from pymongo import MongoClient
-
-from bson import json_util
-import json
+from hel.utils.authentication import HELAuthenticationPolicy
 
 
 class MongoJSONRenderer:
@@ -23,16 +25,25 @@ class MongoJSONRenderer:
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+
+    auth_secret = "巏⇟ू攛劈ᜤ漢࿅䓽奧䬙摀曇䰤䙙൪ᴹ喼唣壆"
+    if 'AUTH_SECRET' in os.environ:
+        auth_secret = os.environ["AUTH_KEY"]
+    authentication_policy = HELAuthenticationPolicy(
+            auth_secret, hashalg='sha512')
+    authorization_policy = ACLAuthorizationPolicy()
+
     config = Configurator(settings=settings, root_factory=Root)
+    config.set_authentication_policy(authentication_policy)
+    config.set_authorization_policy(authorization_policy)
     config.include('pyramid_chameleon')
     config.add_renderer('json', MongoJSONRenderer)
     config.add_static_view('static', 'static', cache_max_age=3600)
 
     # Setup MongoDB
+    url = 'mongodb://localhost:27017/'
     if 'MONGODB_URL' in os.environ:
         url = os.environ['MONGODB_URL']
-    else:
-        url = 'mongodb://localhost:27017/'
     config.registry.mongo = MongoClient(url)
 
     def add_db(request):

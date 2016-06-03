@@ -1,12 +1,17 @@
-from pyramid.traversal import find_root
 from bson.objectid import ObjectId
+from pyramid.traversal import find_root
+from pyramid.security import Allow, Everyone, Authenticated, ALL_PERMISSIONS
 
 
 class Resource(dict):
+
+    acl = []
+
     def __init__(self, ref, parent, **kwargs):
         super().__init__(**kwargs)
         self.__name__ = ref
         self.__parent__ = parent
+        self.acl += [(Allow, '@admins', ALL_PERMISSIONS,)]
 
     def __repr__(self):
         # use standard object representation (not dict's)
@@ -16,8 +21,12 @@ class Resource(dict):
         resource = klass(ref=ref, parent=self)
         self[ref] = resource
 
+    def __acl__(self):
+        return self.acl
+
 
 class MongoCollection(Resource):
+
     collection_name = ""
     resource_name = Resource
 
@@ -36,6 +45,7 @@ class MongoCollection(Resource):
 
 
 class MongoDocument(Resource):
+
     spec = None
 
     def __init__(self, ref, parent):
@@ -58,34 +68,67 @@ class MongoDocument(Resource):
 
 
 class Package(MongoDocument):
+
     def __init__(self, ref, parent):
         MongoDocument.__init__(self, ref, parent)
         self.spec = {'name': ref}
 
+    def retrieve_owner(self):
+        if not hasattr(self, 'owner'):
+            self.owner = self.retrieve()['owner']
+            self.acl += [
+                (Allow, '@' + self.owner, ('pkg_delete', 'pkg_update',),),
+            ]
+
+    def __acl__(self):
+        self.retrieve_owner()
+        return self.acl + [
+            (Allow, Everyone, 'pkg_view',)
+        ]
+
 
 class Packages(MongoCollection):
+
     collection_name = 'packages'
     resource_name = Package
 
     def __getitem__(self, ref):
         return Package(ref, self)
 
+    def __acl__(self):
+        return self.acl + [
+            (Allow, Everyone, 'pkgs_view',)
+        ]
+
 
 class User(MongoDocument):
+
     def __init__(self, ref, parent):
         MongoDocument.__init__(self, ref, parent)
         self.spec = {'nickname': ref}
 
+    def __acl__(self):
+        return self.acl + [
+            (Allow, '@' + self.ref, ('user_update', 'user_get',),),
+        ]
+
 
 class Users(MongoCollection):
+
     collection_name = 'users'
     resource_name = User
 
     def __getitem__(self, ref):
         return User(ref, self)
 
+    def __acl__(self):
+        return self.acl + [
+            (Allow, Authenticated, 'user_list',)
+        ]
+
 
 class Root(Resource):
+
     def __init__(self, request):
         Resource.__init__(self, ref='', parent=None)
 

@@ -13,7 +13,10 @@ def home(request):
 
 
 # Package controller
-@view_config(request_method='PUT', context=Package, renderer='json')
+@view_config(request_method='PUT',
+             context=Package,
+             renderer='json',
+             permission='pkg_update')
 def update_package(context, request):
     r = context.update(request.json_body, True)
 
@@ -22,7 +25,10 @@ def update_package(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='GET', context=Package, renderer='json')
+@view_config(request_method='GET',
+             context=Package,
+             renderer='json',
+             permission='pkg_view')
 def get_package(context, request):
     r = context.retrieve()
 
@@ -32,7 +38,10 @@ def get_package(context, request):
         return r
 
 
-@view_config(request_method='DELETE', context=Package, renderer='json')
+@view_config(request_method='DELETE',
+             context=Package,
+             renderer='json',
+             permission='pkg_delete')
 def delete_package(context, request):
     context.delete()
 
@@ -41,7 +50,10 @@ def delete_package(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='POST', context=Packages, renderer='json')
+@view_config(request_method='POST',
+             context=Packages,
+             renderer='json',
+             permission='pkg_create')
 def create_package(context, request):
     r = context.create(request.json_body)
 
@@ -50,7 +62,10 @@ def create_package(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='GET', context=Packages, renderer='json')
+@view_config(request_method='GET',
+             context=Packages,
+             renderer='json',
+             permission='pkgs_view')
 def list_packages(context, request):
     search_query = PackagesSearchQuery(request.GET.dict_of_lists())
     query = search_query()
@@ -58,7 +73,10 @@ def list_packages(context, request):
 
 
 # User controller
-@view_config(request_method='PUT', context=User, renderer='json')
+@view_config(request_method='PUT',
+             context=User,
+             renderer='json',
+             permission='user_update')
 def update_user(context, request):
     r = context.update(request.json_body, True)
 
@@ -67,7 +85,10 @@ def update_user(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='GET', context=User, renderer='json')
+@view_config(request_method='GET',
+             context=User,
+             renderer='json',
+             permission='user_get')
 def get_user(context, request):
     r = context.retrieve()
 
@@ -77,7 +98,10 @@ def get_user(context, request):
         return r
 
 
-@view_config(request_method='DELETE', context=User, renderer='json')
+@view_config(request_method='DELETE',
+             context=User,
+             renderer='json',
+             permission='user_delete')
 def delete_user(context, request):
     context.delete()
 
@@ -86,7 +110,10 @@ def delete_user(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='POST', context=Users, renderer='json')
+@view_config(request_method='POST',
+             context=Users,
+             renderer='json',
+             permission='user_create')
 def create_user(context, request):
     r = context.create(request.json_body)
 
@@ -95,6 +122,9 @@ def create_user(context, request):
         content_type='application/json; charset=UTF-8')
 
 
-@view_config(request_method='GET', context=Users, renderer='json')
+@view_config(request_method='GET',
+             context=Users,
+             renderer='json',
+             permission='user_list')
 def list_users(context, request):
     return context.retrieve(request.GET)
