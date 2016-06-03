@@ -1,7 +1,9 @@
-from hel.resources import Package, Packages, User, Users
 from pyramid.httpexceptions import HTTPNotFound
 from pyramid.view import view_config
 from pyramid.response import Response
+
+from hel.resources import Package, Packages, User, Users
+from hel.utils.query import PackagesSearchQuery
 
 
 # Home page
@@ -50,7 +52,9 @@ def create_package(context, request):
 
 @view_config(request_method='GET', context=Packages, renderer='json')
 def list_packages(context, request):
-    return context.retrieve(request.GET)
+    search_query = PackagesSearchQuery(request.GET.dict_of_lists())
+    query = search_query()
+    return context.retrieve(query)
 
 
 # User controller

@@ -8,7 +8,7 @@ ref/
 
 # Python local environment
 env/
-hel/__pycache__/
+**/__pycache__/
 hel.egg-info/
 
 # Vim swap and tag files
