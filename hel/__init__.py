@@ -26,6 +26,7 @@ def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
 
+    # Auth
     auth_secret = "巏⇟ू攛劈ᜤ漢࿅䓽奧䬙摀曇䰤䙙൪ᴹ喼唣壆"
     if 'AUTH_SECRET' in os.environ:
         auth_secret = os.environ["AUTH_KEY"]
@@ -50,7 +51,15 @@ def main(global_config, **settings):
         return config.registry.mongo.hel
     config.add_request_method(add_db, 'db', reify=True)
 
+    # Auth again
+    def get_user(request):
+        userid = unauthenticated_userid(request)
+        if userid:
+            return [x for x in config.registry.mongo.hel['users'].find_one({'nickname': userid})]
+    config.add_request_method(get_user, 'user', reify=True)
+
     # Setup routes
     config.add_route('home', '/')
+    config.add_route('login', '/login')
     config.scan()
     return config.make_wsgi_app()

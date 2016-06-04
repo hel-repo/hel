@@ -1,6 +1,9 @@
-from pyramid.httpexceptions import HTTPNotFound
-from pyramid.view import view_config
+import hashlib
+
+from pyramid.httpexceptions import HTTPNotFound, HTTPFound, HTTPForbidden
 from pyramid.response import Response
+from pyramid.security import remember, forget
+from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils.query import PackagesSearchQuery
@@ -9,7 +12,29 @@ from hel.utils.query import PackagesSearchQuery
 # Home page
 @view_config(route_name='home', renderer='templates/home.pt')
 def home(request):
-    return {'project': 'hel'}
+    message = ''
+    nickname = ''
+    password = ''
+    email = ''
+    if 'form.submitted' in request.params:
+        nickname = request.params['nickname']
+        password = request.params['password']
+        pass_hash = hashlib.sha512(password).hexdigest()
+        try:
+            user = Users[nickname].retrieve()
+            correct_hash = user['password']
+            if pass_hash == correct_hash:
+                headers = remember(request, nickname)
+                return HTTPFound(location=request.url, headers=headers)
+        except KeyError:
+            message = 'Failed login'
+    return {
+        'project': 'hel',
+        'message': message,
+        'nickname': nickname,
+        'password': password,
+        'email': email
+    }
 
 
 # Package controller
