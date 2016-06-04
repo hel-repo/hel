@@ -16,6 +16,7 @@ def home(request):
     nickname = ''
     password = ''
     email = ''
+    passwd_confirm = ''
     if 'log-in' in request.params:
         try:
             nickname = request.params['nickname']
@@ -31,12 +32,15 @@ def home(request):
                 message = 'Incorrect nickname and/or password.'
         except KeyError:
             message = 'Bad request.'
+    elif 'register' in request.params:
+        pass
     return {
         'project': 'hel',
         'message': message,
         'nickname': nickname,
         'password': password,
-        'email': email
+        'passwd_confirm': passwd_confirm,
+        'email': email,
     }
 
 

@@ -21,6 +21,7 @@
       <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
     <![endif]-->
+    <script src="${request.static_url('hel:static/main.js')}"></script>
   </head>
 
   <body>
@@ -39,22 +40,47 @@
 
               <div id="login-message">${message}</div>
 
-              <form class="form-signin form-horizontal" method="post">
-                <label for="inputNickname" class="sr-only">Nickname</label>
-                <div class="col-sm-2" style="padding-left: 0px;">
-                  <input name="nickname" type="text" id="inputNickname" class="form-control input-lg" placeholder="Nickname" value="${nickname}" required autofocus>
-                </div>
-                <label for="inputEmail" class="sr-only">Email address</label>
-                <div class="col-sm-2" style="padding-left: 0px;">
-                  <input name="email" type="email" id="inputEmail" class="form-control input-lg" placeholder="Email address" value="${email}" required>
-                </div>
-                <label for="inputPassword" class="sr-only">Password</label>
-                <div class="col-sm-2" style="padding-left: 0px;">
-                  <input name="password" type="password" id="inputPassword" class="form-control input-lg" placeholder="Password" value="${password}" required>
-                </div>
-                <button name="log-in" type="submit" class="btn btn-lg btn-danger">Log in</button>
-                <button name="register" type="button" class="btn btn-lg btn-danger">Register</button>
-              </form>
+              <div id="auth-menu">
+                <button id="action-log-in" class="btn btn-lg btn-danger" onclick="switchTo('login')">Log in</button>
+                <button id="action-register" class="btn btn-lg btn-danger" onclick="switchTo('register')">Register</button>
+              </div>
+
+              <div id="log-in-form" class="hidden">
+                <form class="form-signin form-horizontal" method="post">
+                  <label for="log-in-nickname" class="sr-only">Nickname</label>
+                  <div class="col-sm-4" style="padding-left: 0px;">
+                    <input name="nickname" type="text" id="log-in-nickname" class="form-control input-lg" placeholder="Nickname" value="${nickname}" required>
+                  </div>
+                  <label for="log-in-password" class="sr-only">Password</label>
+                  <div class="col-sm-4" style="padding-left: 0px;">
+                    <input name="password" type="password" id="log-in-password" class="form-control input-lg" placeholder="Password" value="${password}" required>
+                  </div>
+                  <button name="log-in" type="submit" class="btn btn-lg btn-danger">Log in</button>
+                  <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
+                </form>
+              </div>
+              <div id="register-form" class="hidden">
+                <form class="form-signin form-horizontal" method="post">
+                  <!-- TODO: move styles to css file -->
+                  <label for="reg-nickname" class="sr-only">Nickname</label>
+                  <div class="col-sm-2" style="padding-left: 0px;">
+                    <input name="nickname" type="text" id="reg-nickname" class="form-control input-lg" placeholder="Nickname" value="${nickname}" required>
+                  </div>
+                  <label for="reg-email" class="sr-only">Email address</label>
+                  <div class="col-sm-2" style="padding-left: 0px;">
+                    <input name="email" type="email" id="reg-email" class="form-control input-lg" placeholder="Email address" value="${email}" required>
+                  </div>
+                  <label for="reg-passwd" class="sr-only">Password</label>
+                  <div class="col-sm-2" style="padding-left: 0px;">
+                    <input name="password" type="password" id="reg-email" class="form-control input-lg" placeholder="Password" value="${password}" required>
+                  </div>
+                  <label for="reg-passwd-confirm" class="sr-only">Password confirmation</label>
+                  <div class="col-sm-2" style="padding-left: 0px;">
+                    <input name="passwd-confirm" type="password" id="reg-email" class="form-control input-lg" placeholder="Password confirmation" value="${passwd_confirm}" required>
+                  </div>
+                  <button name="register" type="button" class="btn btn-lg btn-danger">Register</button>
+                  <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
+                </form>
             </div>
           </div>
         </div>
