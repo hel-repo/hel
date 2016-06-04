@@ -16,18 +16,21 @@ def home(request):
     nickname = ''
     password = ''
     email = ''
-    if 'form.submitted' in request.params:
-        nickname = request.params['nickname']
-        password = request.params['password']
-        pass_hash = hashlib.sha512(password).hexdigest()
+    if 'log-in' in request.params:
         try:
-            user = Users[nickname].retrieve()
-            correct_hash = user['password']
-            if pass_hash == correct_hash:
-                headers = remember(request, nickname)
-                return HTTPFound(location=request.url, headers=headers)
+            nickname = request.params['nickname']
+            password = request.params['password']
+            pass_hash = hashlib.sha512(password.encode()).hexdigest()
+            user = request.db['users'].find_one({'nickname': nickname})
+            if user:
+                correct_hash = user['password']
+                if pass_hash == correct_hash:
+                    headers = remember(request, nickname)
+                    return HTTPFound(location=request.url, headers=headers)
+            else:
+                message = 'Incorrect nickname and/or password.'
         except KeyError:
-            message = 'Failed login'
+            message = 'Bad request.'
     return {
         'project': 'hel',
         'message': message,

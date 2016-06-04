@@ -27,6 +27,12 @@ p {
   font-weight: 300;
 }
 
+#login-message {
+  margin-bottom: 10px;
+  font-size: 150%;
+  color: #bc2131;
+}
+
 .container {
   width: 100%;
 }

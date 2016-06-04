@@ -31,28 +31,29 @@
             <img class="logo" src="${request.static_url('hel:static/logo.png')}">
           </div>
           <div class="row gray">
-            <div id="login-message">${message}</div>
             <div class="content">
               <h1><span class="font-semi-bold">Hel</span>, <span class="smaller">package repository</span></h1>
               <p class="lead">
                 Welcome to <span class="font-normal">${project}</span>, and enjoy your stay!
               </p>
 
-              <form class="form-signin form-horizontal" action="${request.route_url('home')}" method="post">
+              <div id="login-message">${message}</div>
+
+              <form class="form-signin form-horizontal" method="post">
                 <label for="inputNickname" class="sr-only">Nickname</label>
-                <div class="col-sm-3" style="padding-left: 0px;">
+                <div class="col-sm-2" style="padding-left: 0px;">
                   <input name="nickname" type="text" id="inputNickname" class="form-control input-lg" placeholder="Nickname" value="${nickname}" required autofocus>
                 </div>
                 <label for="inputEmail" class="sr-only">Email address</label>
-                <div class="col-sm-3" style="padding-left: 0px;">
+                <div class="col-sm-2" style="padding-left: 0px;">
                   <input name="email" type="email" id="inputEmail" class="form-control input-lg" placeholder="Email address" value="${email}" required>
                 </div>
                 <label for="inputPassword" class="sr-only">Password</label>
-                <div class="col-sm-3" style="padding-left: 0px;">
+                <div class="col-sm-2" style="padding-left: 0px;">
                   <input name="password" type="password" id="inputPassword" class="form-control input-lg" placeholder="Password" value="${password}" required>
                 </div>
-                <button type="submit" class="btn btn-lg btn-danger">Sign in</button>
-                <button type="button" class="btn btn-lg btn-danger">Register</button>
+                <button name="log-in" type="submit" class="btn btn-lg btn-danger">Log in</button>
+                <button name="register" type="button" class="btn btn-lg btn-danger">Register</button>
               </form>
             </div>
           </div>
