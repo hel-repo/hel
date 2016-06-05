@@ -11,7 +11,11 @@ class Resource(dict):
         super().__init__(**kwargs)
         self.__name__ = ref
         self.__parent__ = parent
-        self.acl += [(Allow, '@admins', ALL_PERMISSIONS,)]
+        self.acl += [
+            (Allow, '~admins', ALL_PERMISSIONS,),
+            (Allow, '~system', ALL_PERMISSIONS,),
+            (Allow, '~allperms', ALL_PERMISSIONS,)
+        ]
 
     def __repr__(self):
         # use standard object representation (not dict's)

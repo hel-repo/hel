@@ -38,14 +38,20 @@
                 Welcome to <span class="font-normal">${project}</span>, and enjoy your stay!
               </p>
 
-              <div id="login-message">${message}</div>
+              <div id="login-message" tal:condition="not logged_in">${message}</div>
 
               <div id="auth-menu">
-                <button id="action-log-in" class="btn btn-lg btn-danger" onclick="switchTo('login')">Log in</button>
-                <button id="action-register" class="btn btn-lg btn-danger" onclick="switchTo('register')">Register</button>
+                <button tal:condition="not logged_in" id="action-log-in" class="btn btn-lg btn-danger" onclick="switchTo('login')">Log in</button>
+                <button tal:condition="not logged_in" id="action-register" class="btn btn-lg btn-danger" onclick="switchTo('register')">Register</button>
+                <div id="log-out" tal:condition="logged_in">
+                  <form method="post">
+                    <span id="greetings">Hello, <span id="greetings-nickname">${nickname}!</span></span>
+                    <button id="action-log-out" class="btn btn-lg btn-danger" name="log-out" type="submit">Log out</button>
+                  </form>
+                </div>
               </div>
 
-              <div id="log-in-form" class="hidden">
+              <div id="log-in-form" tal:condition="not logged_in">
                 <form class="form-signin form-horizontal" method="post">
                   <label for="log-in-nickname" class="sr-only">Nickname</label>
                   <div class="col-sm-4" style="padding-left: 0px;">
@@ -53,13 +59,13 @@
                   </div>
                   <label for="log-in-password" class="sr-only">Password</label>
                   <div class="col-sm-4" style="padding-left: 0px;">
-                    <input name="password" type="password" id="log-in-password" class="form-control input-lg" placeholder="Password" value="${password}" required>
+                    <input name="password" type="password" id="log-in-password" class="form-control input-lg" placeholder="Password" required>
                   </div>
                   <button name="log-in" type="submit" class="btn btn-lg btn-danger">Log in</button>
                   <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
                 </form>
               </div>
-              <div id="register-form" class="hidden">
+              <div id="register-form" tal:condition="not logged_in">
                 <form class="form-signin form-horizontal" method="post">
                   <!-- TODO: move styles to css file -->
                   <label for="reg-nickname" class="sr-only">Nickname</label>
@@ -72,13 +78,13 @@
                   </div>
                   <label for="reg-passwd" class="sr-only">Password</label>
                   <div class="col-sm-2" style="padding-left: 0px;">
-                    <input name="password" type="password" id="reg-email" class="form-control input-lg" placeholder="Password" value="${password}" required>
+                    <input name="password" type="password" id="reg-email" class="form-control input-lg" placeholder="Password" required>
                   </div>
                   <label for="reg-passwd-confirm" class="sr-only">Password confirmation</label>
                   <div class="col-sm-2" style="padding-left: 0px;">
-                    <input name="passwd-confirm" type="password" id="reg-email" class="form-control input-lg" placeholder="Password confirmation" value="${passwd_confirm}" required>
+                    <input name="passwd-confirm" type="password" id="reg-email" class="form-control input-lg" placeholder="Password confirmation" required>
                   </div>
-                  <button name="register" type="button" class="btn btn-lg btn-danger">Register</button>
+                  <button name="register" type="submit" class="btn btn-lg btn-danger">Register</button>
                   <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
                 </form>
             </div>
@@ -113,7 +119,7 @@
           <div class="row red">
             <div class="links">
               <ul>
-                <li class="current-version">v 0.0.3</li>
+                <li class="current-version">v 0.1.0</li>
                 <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/MoonlightOwl/hel/wiki">Docs</a></li>
                 <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/MoonlightOwl/hel">Github Project</a></li>
                 <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="http://webchat.esper.net/?channels=#cc.ru">IRC Channel</a></li>

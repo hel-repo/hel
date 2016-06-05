@@ -1,13 +1,18 @@
-import os
 import json
+import logging
+import os
 
-from pyramid.config import Configurator
 from pyramid.authorization import ACLAuthorizationPolicy
+from pyramid.config import Configurator
+from pyramid.security import Authenticated
 from pymongo import MongoClient
 from bson import json_util
 
 from hel.resources import Root
 from hel.utils.authentication import HELAuthenticationPolicy
+
+
+log = logging.getLogger(__name__)
 
 
 class MongoJSONRenderer:
@@ -34,6 +39,12 @@ def main(global_config, **settings):
             auth_secret, hashalg='sha512')
     authorization_policy = ACLAuthorizationPolicy()
 
+    # Custom config settings
+    settings['activation.length'] = int(settings.get(
+        'activation.length', '64'))
+    settings['activation.time'] = int(settings.get(
+        'activation.time', '64'))
+
     config = Configurator(settings=settings, root_factory=Root)
     config.set_authentication_policy(authentication_policy)
     config.set_authorization_policy(authorization_policy)
@@ -53,10 +64,16 @@ def main(global_config, **settings):
 
     # Auth again
     def get_user(request):
-        userid = unauthenticated_userid(request)
+        userid = request.unauthenticated_userid
         if userid:
-            return [x for x in config.registry.mongo.hel['users'].find_one({'nickname': userid})]
+            return config.registry.mongo.hel['users'].find_one({'nickname': userid})
     config.add_request_method(get_user, 'user', reify=True)
+
+    def is_logged_in(request):
+        if Authenticated in request.effective_principals:
+            return True
+        return False
+    config.add_request_method(is_logged_in, 'logged_in', reify=True)
 
     # Setup routes
     config.add_route('home', '/')

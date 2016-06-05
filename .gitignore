@@ -13,4 +13,5 @@ hel.egg-info/
 
 # Vim swap and tag files
 *.swp
+*.swo
 **/.tags

@@ -1,26 +1,20 @@
-var mainMenu = null;
-var logInForm = null;
-var regForm = null;
-
 window.onload = function() {
-  mainMenu = document.getElementById("auth-menu");
-  logInForm = document.getElementById("log-in-form");
-  regForm = document.getElementById("register-form");
+  switchTo("main")
 }
 
-function switchTo(menu) {
-  mainMenu.className = "hidden";
-  logInForm.className = "hidden";
-  regForm.className = "hidden";
-  switch (menu) {
+function switchTo(form) {
+  $("#auth-menu").hide();
+  $("#log-in-form").hide();
+  $("#register-form").hide();
+  switch (form) {
     case "main":
-      mainMenu.className = "";
+      $("#auth-menu").show();
       break;
     case "register":
-      regForm.className = "";
+      $("#register-form").show();
       break;
     case "login":
-      logInForm.className = "";
+      $("#log-in-form").show();
       break;
   }
 }

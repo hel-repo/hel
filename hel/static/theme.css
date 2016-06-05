@@ -27,10 +27,22 @@ p {
   font-weight: 300;
 }
 
+#greetings {
+  font-size: 150%;
+}
+
+#greetings-nickname {
+  font-weight: bold;
+}
+
 #login-message {
   margin-bottom: 10px;
   font-size: 150%;
   color: #bc2131;
+}
+
+#log-out form button {
+  float: right;
 }
 
 .container {
