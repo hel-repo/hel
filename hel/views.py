@@ -11,6 +11,7 @@ from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils.messages import Messages
+from htl.utils.models import ModelUser
 from hel.utils.query import PackagesSearchQuery
 
 
@@ -55,7 +56,6 @@ def home(request):
                     correct_hash = user['password']
                     if pass_hash == correct_hash:
                         headers = remember(request, nickname)
-                        log.debug('Remembering')
                         return HTTPFound(location=request.url, headers=headers)
                     else:
                         message = Messages.failed_login
@@ -67,8 +67,7 @@ def home(request):
             email = request.params['email'].strip()
             password = request.params['password'].strip()
             passwd_confirm = request.params['passwd-confirm'].strip()
-        except KeyError as e:
-            log.debug('Bad register request: %s', str(e), exc_info=e)
+        except KeyError:
             message = Messages.bad_request
         log.debug(
             'Register, local variables:%s',
@@ -94,8 +93,6 @@ def home(request):
                     if password != passwd_confirm:
                         message = Messages.password_mismatch
                     else:
-                        # Praise the python's 80-chars-long line limit!
-                        # The code now looks ugly :(
                         act_phrase = os.urandom(
                             request.registry.settings
                             ['activation.length']).hex()
@@ -105,19 +102,10 @@ def home(request):
                                         ['activation.time']))
                         subrequest = Request.blank(
                             '/users', method='POST', POST=(
-                                '{' + """
-                                "nickname": "{nickname}",
-                                "email": "{email}",
-                                "password": "{password}",
-                                "groups": [],
-                                "activation_phrase": "{act_phrase}",
-                                "activation_till": "{act_till}"
-                                """.format(
-                                    nickname=nickname, email=email,
-                                    password=pass_hash, act_phrase=act_phrase,
-                                    act_till=act_till) + '}'
-                                )
-                            )
+                                str(ModelUser(nickname=nickname, email=email,
+                                              password=pass_hash,
+                                              activation_phrase=act_phrase,
+                                              activation_till=act_till))))
                         subrequest.no_permission_check = True
                         response = request.invoke_subrequest(
                             subrequest, use_tweens=True)
