@@ -54,3 +54,16 @@ class HELAuthenticationPolicy(Policy):
             }
         )
         return headers
+
+
+def get_user(request):
+    userid = request.unauthenticated_userid
+    if userid:
+        return request.db['users'] \
+            .find_one({'nickname': userid})
+
+
+def is_logged_in(request):
+    if Authenticated in request.effective_principals:
+        return True
+    return False
