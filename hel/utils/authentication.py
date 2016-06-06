@@ -1,6 +1,7 @@
 from pyramid.authentication import AuthTktAuthenticationPolicy as Policy
 from pyramid.security import Everyone, Authenticated
 
+
 class HELAuthenticationPolicy(Policy):
 
     def authenticated_userid(self, request):
@@ -18,7 +19,7 @@ class HELAuthenticationPolicy(Policy):
         if user:
             principals += [Authenticated, '@' + user['nickname']]
             principals += ['~' + x for x in user['groups']]
-            if not 'act_till' in user and not 'act_phrase' in user:
+            if 'act_till' not in user and 'act_phrase' not in user:
                 principals += ['activated']
         elif hasattr(request, 'no_permission_check') \
                 and request.no_permission_check:

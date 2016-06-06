@@ -20,10 +20,12 @@ tests_require = [
     'WebTest >= 1.3.1',  # py3 compat
     'pytest',  # includes virtualenv
     'pytest-cov',
+    'pytest-capturelog',
+    'pytest-pep8'
     ]
 
 setup(name='hel',
-      version='0.01',
+      version='0.1.0',
       description='OpenComputers package repository',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[

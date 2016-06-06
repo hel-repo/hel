@@ -1,8 +1,10 @@
 from pyramid.httpexceptions import HTTPBadRequest
 
+
 def _only_one_param(func):
     func._only_one = True
     return func
+
 
 def concat_params(params, op='or'):
     operator = '$' + op
@@ -11,7 +13,8 @@ def concat_params(params, op='or'):
     elif len(params) == 1:
         return params[0]
     else:
-        raise BadValue
+        raise ValueError
+
 
 class PackagesSearchParams:
     """Provides methods for converting GET-params to MongoDB query"""
@@ -56,7 +59,8 @@ class PackagesSearchParams:
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.url': concat_params([str(x) for x in param], 'all')}
+        return {'versions.files.url': concat_params([str(x) for x in param],
+                'all')}
 
     def file_dir(param):
         """Search by directory.
@@ -64,7 +68,8 @@ class PackagesSearchParams:
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.dir': concat_params([str(x) for x in param], 'all')}
+        return {'versions.files.dir': concat_params([str(x) for x in param],
+                'all')}
 
     def file_name(param):
         """Search by file name.
@@ -72,7 +77,8 @@ class PackagesSearchParams:
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.name': concat_params([str(x) for x in param], 'all')}
+        return {'versions.files.name': concat_params([str(x) for x in param],
+                'all')}
 
     def dependency(param):
         """Returns packages depending on specific packages.
@@ -113,6 +119,7 @@ class PackagesSearchParams:
 
         return {'screenshots.description': {'$regex': str(param)}}
 
+
 class PackagesSearchQuery:
 
     def __init__(self, params):
@@ -125,11 +132,16 @@ class PackagesSearchQuery:
                 param_method = getattr(PackagesSearchParams, param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
-                        raise HTTPBadRequest(detail='Too many values (1 expected, got ' + str(len(param)) + ')')
+                        raise HTTPBadRequest(
+                                detail='Too many values '
+                                       '(1 expected, got ' +
+                                       str(len(param)) + ')')
                     else:
                         param = param[0]
-                if not hasattr(param_method, '_no_param') and (len(param) == 0 or param[0] == ''):
-                    raise HTTPBadRequest(detail='No values given for ' + str(param_name))
+                if (not hasattr(param_method, '_no_param') and
+                        (len(param) == 0 or param[0] == '')):
+                    raise HTTPBadRequest(detail='No values given for ' +
+                                         str(param_name))
                 search_doc = param_method(param)
                 for k, v in search_doc.items():
                     query[k] = v

@@ -56,6 +56,8 @@ def main(global_config, **settings):
     url = 'mongodb://localhost:27017/'
     if 'MONGODB_URL' in os.environ:
         url = os.environ['MONGODB_URL']
+    elif 'mongo_db_url' in settings:
+        url = settings['mongo_db_url']
     config.registry.mongo = MongoClient(url)
 
     def add_db(request):
@@ -66,7 +68,8 @@ def main(global_config, **settings):
     def get_user(request):
         userid = request.unauthenticated_userid
         if userid:
-            return config.registry.mongo.hel['users'].find_one({'nickname': userid})
+            return config.registry.mongo.hel['users'] \
+                .find_one({'nickname': userid})
     config.add_request_method(get_user, 'user', reify=True)
 
     def is_logged_in(request):

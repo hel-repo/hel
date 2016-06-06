@@ -3,13 +3,14 @@ import hashlib
 import logging
 import os
 
-from pyramid.httpexceptions import HTTPNotFound, HTTPFound, HTTPForbidden
+from pyramid.httpexceptions import HTTPNotFound, HTTPFound
 from pyramid.request import Request
 from pyramid.response import Response
-from pyramid.security import remember, forget, Allowed
+from pyramid.security import remember, forget
 from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils.messages import Messages
 from hel.utils.query import PackagesSearchQuery
 
 
@@ -24,6 +25,8 @@ def home(request):
     password = ''
     email = ''
     passwd_confirm = ''
+    if not hasattr(request, 'logged_in'):
+        request.logged_in = False
     if request.logged_in:
         nickname = request.authenticated_userid
         if 'log-out' in request.params:
@@ -31,75 +34,106 @@ def home(request):
             return HTTPFound(location=request.url, headers=headers)
     elif 'log-in' in request.params:
         try:
-            nickname = request.params['nickname']
-            password = request.params['password']
+            nickname = request.params['nickname'].strip()
+            password = request.params['password'].strip()
+        except KeyError:
+            message = Messages.bad_request
+        else:
+            log.debug(
+                'Log in, local variables:%s',
+                ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                         for x, y in locals().items()])
+            )
+            if nickname == '':
+                message = Messages.empty_nickname
+            elif password == '':
+                message = Messages.empty_password
+            else:
+                pass_hash = hashlib.sha512(password.encode()).hexdigest()
+                user = request.db['users'].find_one({'nickname': nickname})
+                if user:
+                    correct_hash = user['password']
+                    if pass_hash == correct_hash:
+                        headers = remember(request, nickname)
+                        log.debug('Remembering')
+                        return HTTPFound(location=request.url, headers=headers)
+                    else:
+                        message = Messages.failed_login
+                else:
+                    message = Messages.failed_login
+    elif 'register' in request.params:
+        try:
+            nickname = request.params['nickname'].strip()
+            email = request.params['email'].strip()
+            password = request.params['password'].strip()
+            passwd_confirm = request.params['passwd-confirm'].strip()
+        except KeyError as e:
+            log.debug('Bad register request: %s', str(e), exc_info=e)
+            message = Messages.bad_request
+        log.debug(
+            'Register, local variables:%s',
+            ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                     for x, y in locals().items()])
+        )
+        if nickname == '':
+            message = Messages.empty_nickname
+        elif email == '':
+            message = Messages.empty_email
+        elif password == '':
+            message = Messages.empty_password
+        else:
             pass_hash = hashlib.sha512(password.encode()).hexdigest()
             user = request.db['users'].find_one({'nickname': nickname})
             if user:
-                correct_hash = user['password']
-                if pass_hash == correct_hash:
-                    headers = remember(request, nickname)
-                    return HTTPFound(location=request.url, headers=headers)
-                else:
-                    message = 'Incorrect nickname and/or password.'
+                message = Messages.nickname_in_use
             else:
-                message = 'Incorrect nickname and/or password.'
-        except KeyError:
-            message = 'Bad request.'
-    elif 'register' in request.params:
-        try:
-            nickname = request.params['nickname']
-            email = request.params['email']
-            password = request.params['password']
-            passwd_confirm = request.params['passwd-confirm']
-        except KeyError:
-            message = 'Bad request.'
-        pass_hash = hashlib.sha512(password.encode()).hexdigest()
-        user = request.db['users'].find_one({'nickname': nickname})
-        if user:
-            message = 'This nickname is already in use.'
-        else:
-            user = request.db['users'].find_one({'email': email})
-            if user:
-                message = 'This email address is already in use.'
-            else:
-                if password != passwd_confirm:
-                    message = 'Passwords do not match.'
+                user = request.db['users'].find_one({'email': email})
+                if user:
+                    message = Messages.email_in_use
                 else:
-                    # Praise the python's 80-chars-long line limit!
-                    # The code now looks ugly :(
-                    act_phrase = os.urandom(
-                        request.registry.settings \
-                            ['activation.length']).hex()
-                    act_till = (datetime.datetime.now()
-                              + datetime.timedelta(
-                                seconds=request.registry.settings \
-                                    ['activation.time']))
-                    subrequest = Request.blank('/users', method='POST',
-                                               POST='{' + """
-                        "nickname": "{nickname}",
-                        "email": "{email}",
-                        "password": "{password}",
-                        "groups": [],
-                        "activation_phrase": "{act_phrase}",
-                        "activation_till": "{act_till}"
-                    """.format(nickname=nickname, email=email,
-                               password=pass_hash, act_phrase=act_phrase,
-                               act_till=act_till) + '}')
-                    subrequest.no_permission_check = True
-                    response = request.invoke_subrequest(
-                        subrequest, use_tweens=True)
-                    if response.status_code == 201:
-                        # TODO: send activation email
-                        message = 'Account created successfully!'
+                    if password != passwd_confirm:
+                        message = Messages.password_mismatch
                     else:
-                        message = 'Internal error.'
-                        log.error('Could not create a user: subrequest'
-                            ' returned with status code %s!\n'
-                            'Local variables in frame:%s',
-                            response.status_code,
-                            ''.join(['\n * ' + str(x) + ' = ' + str(y) \
-                                for x, y in locals().items()]))
+                        # Praise the python's 80-chars-long line limit!
+                        # The code now looks ugly :(
+                        act_phrase = os.urandom(
+                            request.registry.settings
+                            ['activation.length']).hex()
+                        act_till = (datetime.datetime.now() +
+                                    datetime.timedelta(
+                                        seconds=request.registry.settings
+                                        ['activation.time']))
+                        subrequest = Request.blank(
+                            '/users', method='POST', POST=(
+                                '{' + """
+                                "nickname": "{nickname}",
+                                "email": "{email}",
+                                "password": "{password}",
+                                "groups": [],
+                                "activation_phrase": "{act_phrase}",
+                                "activation_till": "{act_till}"
+                                """.format(
+                                    nickname=nickname, email=email,
+                                    password=pass_hash, act_phrase=act_phrase,
+                                    act_till=act_till) + '}'
+                                )
+                            )
+                        subrequest.no_permission_check = True
+                        response = request.invoke_subrequest(
+                            subrequest, use_tweens=True)
+                        if response.status_code == 201:
+                            # TODO: send activation email
+                            message = Messages.account_created_success
+                        else:
+                            message = Messages.internal_error
+                            log.error(
+                                'Could not create a user: subrequest'
+                                ' returned with status code %s!\n'
+                                'Local variables in frame:%s',
+                                response.status_code,
+                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                                         for x, y in locals().items()])
+                            )
     return {
         'project': 'hel',
         'message': message,
@@ -115,7 +149,7 @@ def home(request):
              renderer='json',
              permission='pkg_update')
 def update_package(context, request):
-    r = context.update(request.json_body, True)
+    context.update(request.json_body, True)
 
     return Response(
         status='202 Accepted',
@@ -152,7 +186,7 @@ def delete_package(context, request):
              renderer='json',
              permission='pkg_create')
 def create_package(context, request):
-    r = context.create(request.json_body)
+    context.create(request.json_body)
 
     return Response(
         status='201 Created',
@@ -175,7 +209,7 @@ def list_packages(context, request):
              renderer='json',
              permission='user_update')
 def update_user(context, request):
-    r = context.update(request.json_body, True)
+    context.update(request.json_body, True)
 
     return Response(
         status='202 Accepted',
@@ -212,7 +246,7 @@ def delete_user(context, request):
              renderer='json',
              permission='user_create')
 def create_user(context, request):
-    r = context.create(request.json_body)
+    context.create(request.json_body)
 
     return Response(
         status='201 Created',
