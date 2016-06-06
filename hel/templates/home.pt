@@ -45,7 +45,7 @@
                 <button tal:condition="not logged_in" id="action-register" class="btn btn-lg btn-danger" onclick="switchTo('register')">Register</button>
                 <div id="log-out" tal:condition="logged_in">
                   <form method="post">
-                    <span id="greetings">Hello, <span id="greetings-nickname">${nickname}!</span></span>
+                    <span id="greetings">Hello, <span id="greetings-nickname">${nickname}</span>!</span>
                     <button id="action-log-out" class="btn btn-lg btn-danger" name="log-out" type="submit">Log out</button>
                   </form>
                 </div>

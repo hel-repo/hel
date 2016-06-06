@@ -11,7 +11,7 @@ from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils.messages import Messages
-from htl.utils.models import ModelUser
+from hel.utils.models import ModelUser
 from hel.utils.query import PackagesSearchQuery
 
 
@@ -40,11 +40,6 @@ def home(request):
         except KeyError:
             message = Messages.bad_request
         else:
-            log.debug(
-                'Log in, local variables:%s',
-                ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                         for x, y in locals().items()])
-            )
             if nickname == '':
                 message = Messages.empty_nickname
             elif password == '':
@@ -56,7 +51,9 @@ def home(request):
                     correct_hash = user['password']
                     if pass_hash == correct_hash:
                         headers = remember(request, nickname)
-                        return HTTPFound(location=request.url, headers=headers)
+                        response = HTTPFound(location=request.url,
+                                             headers=headers)
+                        return response
                     else:
                         message = Messages.failed_login
                 else:
@@ -69,11 +66,6 @@ def home(request):
             passwd_confirm = request.params['passwd-confirm'].strip()
         except KeyError:
             message = Messages.bad_request
-        log.debug(
-            'Register, local variables:%s',
-            ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                     for x, y in locals().items()])
-        )
         if nickname == '':
             message = Messages.empty_nickname
         elif email == '':
@@ -105,7 +97,8 @@ def home(request):
                                 str(ModelUser(nickname=nickname, email=email,
                                               password=pass_hash,
                                               activation_phrase=act_phrase,
-                                              activation_till=act_till))))
+                                              activation_till=act_till))),
+                            content_type='application/json')
                         subrequest.no_permission_check = True
                         response = request.invoke_subrequest(
                             subrequest, use_tweens=True)

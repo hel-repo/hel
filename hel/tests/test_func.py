@@ -1,7 +1,12 @@
 import copy
 import unittest
+from webob.headers import ResponseHeaders
 
 from hel.utils.messages import Messages
+
+
+deleted = False
+auth_headers = None
 
 
 class FunctionalTests(unittest.TestCase):
@@ -14,13 +19,16 @@ class FunctionalTests(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
-        from pymongo import MongoClient
-        url = 'mongodb://localhost:37017'
-        mongo = MongoClient(url)
-        db = mongo.hel
-        users = db['users']
-        users.delete_many({})
-        mongo.close()
+        global deleted
+        if not deleted:
+            from pymongo import MongoClient
+            url = 'mongodb://localhost:37017'
+            mongo = MongoClient(url)
+            db = mongo.hel
+            users = db['users']
+            users.delete_many({})
+            mongo.close()
+            deleted = True
 
     def setUp(self):
         settings = {
@@ -97,6 +105,7 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(message.string, Messages.password_mismatch)
 
     def test_reg_success(self):
+        from pymongo import MongoClient
         data = copy.copy(self.user)
         data['register'] = True
         data['passwd-confirm'] = data['password']
@@ -104,22 +113,36 @@ class FunctionalTests(unittest.TestCase):
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.account_created_success)
+        client = MongoClient('mongodb://localhost:37017')
+        users = [x for x in client.hel['users'].find()]
+        client.close()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0]['nickname'], data['nickname'])
 
 
-class FunctionalTestsWithAuth:
+class FunctionalTestsWithAuth(unittest.TestCase):
 
     user = FunctionalTests.user
 
-    __init__ = FunctionalTests.__init__
     setUp = FunctionalTests.setUp
     tearDown = FunctionalTests.tearDown
 
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
+
     def test_log_in_success(self):
+        global auth_headers
         data = copy.copy(self.user)
         data['log-in'] = True
         res1 = self.test_app.post('/', data, status=302)
-        self.headers = res1.headers
-        res = self.test_app.get('/', headers=self.headers, status=200)
+        headers = res1.headers
+        auth_headers = ResponseHeaders()
+        for k, v in headers.items():
+            if k.lower() == 'set-cookie':
+                auth_headers.add('Cookie', v)
+            elif k.lower() not in ['content-type', 'content-length']:
+                auth_headers.add(k, v)
+        res = self.test_app.get('/', headers=auth_headers, status=200)
         self.assertIsNone(res.html.find(id='login-message'))
         self.assertIsNone(res.html.find(id='action-log-in'))
         self.assertIsNone(res.html.find(id='action-register'))
@@ -131,9 +154,11 @@ class FunctionalTestsWithAuth:
                          self.user['nickname'])
 
     def test_log_out(self):
+        global auth_headers
+        print(auth_headers)
         res1 = self.test_app.post('/', {
                 'log-out': True
-            }, headers=self.headers, status=302)
-        self.headers = res1.headers
-        res = self.test_app.get('/', headers=self.headers, status=200)
+            }, headers=auth_headers, status=302)
+        auth_headers = res1.headers
+        res = self.test_app.get('/', headers=auth_headers, status=200)
         self.assertIsNotNone(res.html.find(id='login-message'))
