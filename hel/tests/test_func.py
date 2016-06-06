@@ -13,7 +13,6 @@ class FunctionalTests(unittest.TestCase):
     }
 
     def __init__(self, *args, **kwargs):
-        unittest.defaultTestLoader.sortTestMethodsUsing = None
         unittest.TestCase.__init__(self, *args, **kwargs)
         from pymongo import MongoClient
         url = 'mongodb://localhost:37017'

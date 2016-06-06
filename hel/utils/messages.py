@@ -10,3 +10,6 @@ class Messages:
     password_mismatch = 'Passwords do not match.'
     account_created_success = 'Account created successfully!'
     internal_error = 'Internal error.'
+    too_many_values = 'Too many values (%s expected, got %s).'
+    no_values = 'No values given for %s.'
+    bad_search_param = 'No such search param: %s.'
