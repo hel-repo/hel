@@ -179,9 +179,19 @@ def create_package(context, request):
              renderer='json',
              permission='pkgs_view')
 def list_packages(context, request):
-    search_query = PackagesSearchQuery(request.GET.dict_of_lists())
+    params = request.GET.dict_of_lists()
+    offset = 0
+    length = request.registry.settings['controllers.packages.list_length']
+    if 'offset' in params:
+        offset = params.pop('offset')[0]
+    try:
+        offset = int(offset)
+    except ValueError:
+        offset = 0
+    search_query = PackagesSearchQuery(params)
     query = search_query()
-    return context.retrieve(query)
+    retrieved = context.retrieve(query)
+    return retrieved[offset:offset+length]
 
 
 # User controller
@@ -239,4 +249,14 @@ def create_user(context, request):
              renderer='json',
              permission='user_list')
 def list_users(context, request):
-    return context.retrieve(request.GET)
+    params = request.GET
+    offset = 0
+    length = request.registry.settings['controllers.users.list_length']
+    if 'offset' in params:
+        offset = params.pop('offset')[0]
+    try:
+        offset = int(offset)
+    except:
+        offset = 0
+    retrieved = context.retrieve(params)
+    return retrieved[offset:offset+length]

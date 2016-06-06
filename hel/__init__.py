@@ -47,6 +47,10 @@ def main(global_config, **settings):
         'activation.length', '64'))
     settings['activation.time'] = int(settings.get(
         'activation.time', '3600'))
+    settings['controllers.packages.list_length'] = int(settings.get(
+        'controllers.packages.list_length', '20'))
+    settings['controllers.users.list_length'] = int(settings.get(
+        'controllers.users.list_length', '20'))
 
     config = Configurator(settings=settings, root_factory=Root)
     config.set_authentication_policy(authentication_policy)
