@@ -132,6 +132,10 @@ class PackagesSearchQuery:
         for param_name, param in self.params.items():
             if hasattr(PackagesSearchParams, param_name):
                 param_method = getattr(PackagesSearchParams, param_name)
+                if (not hasattr(param_method, '_no_param') and
+                        (len(param) == 0 or param[0] == '')):
+                    raise HTTPBadRequest(
+                        detail=Messages.no_values % param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
                         raise HTTPBadRequest(
@@ -139,10 +143,6 @@ class PackagesSearchQuery:
                                 1, len(param),))
                     else:
                         param = param[0]
-                if (not hasattr(param_method, '_no_param') and
-                        (len(param) == 0 or param[0] == '')):
-                    raise HTTPBadRequest(
-                        detail=Messages.no_values % param_name)
                 search_doc = param_method(param)
                 for k, v in search_doc.items():
                     query[k] = v

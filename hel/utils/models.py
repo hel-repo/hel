@@ -22,7 +22,7 @@ class ModelPackage:
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
             elif k == 'versions':
-                for num, ver in v.enumerate():
+                for num, ver in enumerate(v):
                     v[num] = {
                         'number': str(ver['number']),
                         'files': [{'url': str(x['url']),
@@ -38,7 +38,7 @@ class ModelPackage:
             elif k == 'screenshots':
                 self.data[k] = [{'url': str(x['url']),
                                  'description': str(x['description'])}
-                                for x in v['screenshots']]
+                                for x in v]
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
 
