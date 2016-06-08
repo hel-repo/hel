@@ -628,7 +628,7 @@ class PkgSearchTests(unittest.TestCase):
         return [
             (['/bin'], [self.pkg1, self.pkg2, self.pkg3],),
             (['/lib', '/man'], [self.pkg1, self.pkg2, self.pkg3],),
-            (['/hey'], [],),
+            (['/hey'], [],)
         ]
 
     @param('file_name')

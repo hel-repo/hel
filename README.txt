@@ -1,6 +1,6 @@
 Hel Package Repository
 ======================
-Package repository and database, for OpenComputers & ComputerCraft programs.
+A package database and repository of OpenComputers & ComputerCraft programs.
 
 Getting Started - Usage
 -----------------------
@@ -19,3 +19,11 @@ Getting Started - Dev
 
 This will setup and run local copy of hel.
 http://127.0.0.1:6543/
+
+Testing
+-------
+To be able to run tests you need to install additional packages with the following command:
+$ $VENV/bin/pip install -e '.[testing]'
+And there's the command to actually run tests:
+$ $PENV/bin/py.test
+By default, it also performs "PEP8 sanity checks", and stops on first failture.
