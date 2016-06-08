@@ -34,7 +34,7 @@ def are_equal(a, b):
     return not unmatched
 
 
-def one_param(name):
+def one_value_param(name):
 
     def wrap(func):
 
@@ -524,9 +524,33 @@ class PkgSearchTests(unittest.TestCase):
         self.db['packages'].delete_many({})
         self.client.close()
 
-    @one_param('name')
-    def test_list_name(self):
+    @one_value_param('name')
+    def test_pkg_search_name(self):
         return [
             ('package', [self.pkg1, self.pkg2, self.pkg3],),
             ('1', [self.pkg1],)
+        ]
+
+    @one_value_param('description')
+    def test_pkg_search_description(self):
+        return [
+            ('[Mm]y', [self.pkg1, self.pkg2, self.pkg3],),
+            ('first', [self.pkg1],),
+            ('second', [self.pkg2],),
+            ('third', [self.pkg3],),
+            ('test', [self.pkg1, self.pkg2, self.pkg3],)
+        ]
+
+    @one_value_param('authors')
+    def test_pkg_search_author(self):
+        return [
+            ('[Tt]ester', [self.pkg1, self.pkg2, self.pkg3],),
+            ('Kjers', [self.pkg2],)
+        ]
+
+    @one_value_param('screen_desc')
+    def test_pkg_search_screen_desc(self):
+        return [
+            ('3', [self.pkg1, self.pkg2, self.pkg3],),
+            ('test-3', [self.pkg3],)
         ]
