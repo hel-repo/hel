@@ -3,19 +3,19 @@ import json
 
 class ModelPackage:
 
-    data = {
-        'name': '',
-        'description': '',
-        'short_description': '',
-        'owner': '',
-        'authors': [],
-        'license': '',
-        'tags': [],
-        'versions': [],
-        'screenshots': []
-    }
-
     def __init__(self, **kwargs):
+        self.data = {
+            'name': '',
+            'description': '',
+            'short_description': '',
+            'owner': '',
+            'authors': [],
+            'license': '',
+            'tags': [],
+            'versions': [],
+            'screenshots': []
+        }
+
         for k, v in kwargs.items():
             if k in ['name', 'description', 'owner', 'license']:
                 self.data[k] = str(v)
@@ -51,16 +51,16 @@ class ModelPackage:
 
 class ModelUser:
 
-    data = {
-        'nickname': '',
-        'groups': [],
-        'password': '',
-        'email': '',
-        'activation_phrase': '',
-        'activation_till': ''
-    }
-
     def __init__(self, **kwargs):
+        self.data = {
+            'nickname': '',
+            'groups': [],
+            'password': '',
+            'email': '',
+            'activation_phrase': '',
+            'activation_till': ''
+        }
+
         for k, v in kwargs.items():
             if k in ['nickname', 'activation_till', 'password',
                      'email', 'activation_phrase']:

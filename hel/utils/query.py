@@ -25,19 +25,19 @@ class PackagesSearchParams:
     def name(param):
         """Search by name regex"""
 
-        return {'name': {'$regex': str(param)}}
+        return {'name': {'$regex': '.*' + str(param) + '.*'}}
 
     @_only_one_param
     def description(param):
         """Search by description regex"""
 
-        return {'description': {'$regex': str(param)}}
+        return {'description': {'$regex': '.*' + str(param) + '.*'}}
 
     @_only_one_param
     def authors(param):
         """Search by author name regex"""
 
-        return {'authors': {'$regex': str(param)}}
+        return {'authors': {'$regex': '.*' + str(param) + '.*'}}
 
     def license(param):
         """Search by license.
@@ -119,7 +119,9 @@ class PackagesSearchParams:
     def screen_desc(param):
         """Search by screenshot description regex"""
 
-        return {'screenshots.description': {'$regex': str(param)}}
+        return {'screenshots.description': {
+            '$regex': '.*' + str(param) + '.*'
+        }}
 
 
 class PackagesSearchQuery:

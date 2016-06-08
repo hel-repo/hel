@@ -84,7 +84,7 @@ def one_param(name):
                     for num, doc in enumerate(search_result):
                         if '_id' in search_result[num]:
                             del search_result[num]['_id']
-                    # self.assertTrue(are_equal(search_result, expected))
+                    self.assertTrue(are_equal(search_result, expected))
 
         return f
 
@@ -510,9 +510,12 @@ class PkgSearchTests(unittest.TestCase):
         self.client = MongoClient('mongodb://localhost:37017')
         self.db = self.client.hel
         self.db['packages'].delete_many({})
-        for pkg in [self.pkg1, self.pkg2, self.pkg3]:
-            self.db['packages'].insert_one(pkg)
-            del pkg['_id']
+        self.db['packages'].insert_one(self.pkg1)
+        del self.pkg1['_id']
+        self.db['packages'].insert_one(self.pkg2)
+        del self.pkg2['_id']
+        self.db['packages'].insert_one(self.pkg3)
+        del self.pkg3['_id']
 
         self.config = testing.setUp()
 
