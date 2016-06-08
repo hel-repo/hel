@@ -44,7 +44,7 @@ def one_value_param(name):
             # 0 values: should fail
             with self.subTest(test='0 values'):
                 try:
-                    search_query = PackagesSearchQuery({
+                    PackagesSearchQuery({
                         name: []
                     })()
                 except HTTPBadRequest as e:
@@ -54,13 +54,13 @@ def one_value_param(name):
                     else:
                         raise e
                 else:
-                    raise e
+                    raise AssertionError()
 
             # 2, 3 values: should fail
             for i in range(2, 4):
                 with self.subTest(test='%s values' % i):
                     try:
-                        search_query = PackagesSearchQuery({
+                        PackagesSearchQuery({
                             name: ['hel'] * i
                         })()
                     except HTTPBadRequest as e:
@@ -70,13 +70,55 @@ def one_value_param(name):
                         else:
                             raise e
                     else:
-                        raise e
+                        raise AssertionError()
 
             for test_case in tests:
                 with self.subTest(test=test_case):
                     value, expected = test_case
                     search_query = PackagesSearchQuery({
                         name: [value]
+                    })
+                    query = search_query()
+                    search_result = [x for x in self.db
+                                     ['packages'].find(query)]
+                    for num, doc in enumerate(search_result):
+                        if '_id' in search_result[num]:
+                            del search_result[num]['_id']
+                    self.assertTrue(are_equal(search_result, expected))
+
+        return f
+
+    return wrap
+
+
+def param(name):
+
+    def wrap(func):
+
+        def f(self):
+
+            tests = func(self)
+
+            # Zero values: should fail
+            with self.subTest(test='0 values'):
+                try:
+                    PackagesSearchQuery({
+                        name: []
+                    })()
+                except HTTPBadRequest as e:
+                    if str(e) == Messages.no_values % name:
+                        # Expected exception
+                        pass
+                    else:
+                        raise e
+                else:
+                    raise AssertionError()
+
+            for test_case in tests:
+                with self.subTest(test=test_case):
+                    values, expected = test_case
+                    search_query = PackagesSearchQuery({
+                        name: values
                     })
                     query = search_query()
                     search_result = [x for x in self.db
@@ -553,4 +595,64 @@ class PkgSearchTests(unittest.TestCase):
         return [
             ('3', [self.pkg1, self.pkg2, self.pkg3],),
             ('test-3', [self.pkg3],)
+        ]
+
+    @param('license')
+    def test_pkg_search_license(self):
+        return [
+            (['mylicense-1'], [self.pkg1],),
+            (['mylicense-2', 'mylicense-3'], [self.pkg2, self.pkg3],)
+        ]
+
+    @param('tags')
+    def test_pkg_search_tags(self):
+        return [
+            (['xxx', 'zzz'], [self.pkg1],),
+            (['aaa'], [self.pkg1, self.pkg3],),
+            (['ccc'], [self.pkg2, self.pkg3],)
+        ]
+
+    @param('file_url')
+    def test_pkg_search_file_url(self):
+        return [
+            (['http://example.com/file11'], [self.pkg1],),
+            (['http://example.com/file31'], [self.pkg3],),
+            (['http://example.com/file22',
+              'http://example.com/file23'], [self.pkg2],),
+            (['http://example.com/file12',
+              'http://example.com/file32'], [],)
+        ]
+
+    @param('file_dir')
+    def test_pkg_search_file_dir(self):
+        return [
+            (['/bin'], [self.pkg1, self.pkg2, self.pkg3],),
+            (['/lib', '/man'], [self.pkg1, self.pkg2, self.pkg3],),
+            (['/hey'], [],),
+        ]
+
+    @param('file_name')
+    def test_pkg_search_file_name(self):
+        return [
+            (['test-3-file-1', 'test-1-file-3'], [],),
+            (['test-2-file-2', 'test-2-file-3'], [self.pkg2],),
+            (['test-1-file-1', 'test-1-file-2'], [self.pkg1],),
+        ]
+
+    @param('dependency')
+    def test_pkg_search_dependency(self):
+        return [
+            (['dpackage-8:3.5.*'], [self.pkg3],),
+            (['dpackage-1:6.6.6:recommended'], [],),
+            (['dpackage-2'], [self.pkg1],)
+        ]
+
+    @param('screen_url')
+    def test_pkg_search_screen_url(self):
+        return [
+            (['http://img.example.com/img11',
+              'http://img.example.com/img31'], [self.pkg1, self.pkg3],),
+            (['http://img.example.com/img21',
+              'http://img.example.com/img23'], [self.pkg2],),
+            (['http://img.example.com/img42'], [],)
         ]
