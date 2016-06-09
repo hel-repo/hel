@@ -583,6 +583,14 @@ class PkgSearchTests(unittest.TestCase):
             ('test', [self.pkg1, self.pkg2, self.pkg3],)
         ]
 
+    @one_value_param('short_description')
+    def test_pkg_search_short_description(self):
+        return [
+            ('pack', [self.pkg1, self.pkg2, self.pkg3],),
+            ('3', [self.pkg3],),
+            ('4', [],)
+        ]
+
     @one_value_param('authors')
     def test_pkg_search_author(self):
         return [

@@ -34,6 +34,10 @@ class PackagesSearchParams:
         return {'description': {'$regex': '.*' + str(param) + '.*'}}
 
     @_only_one_param
+    def short_description(param):
+        return {'short_description': {'$regex': '.*' + str(param) + '.*'}}
+
+    @_only_one_param
     def authors(param):
         """Search by author name regex"""
 
