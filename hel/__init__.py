@@ -37,7 +37,7 @@ def main(global_config, **settings):
     # Auth
     auth_secret = "巏⇟ू攛劈ᜤ漢࿅䓽奧䬙摀曇䰤䙙൪ᴹ喼唣壆"
     if 'AUTH_SECRET' in os.environ:
-        auth_secret = os.environ["AUTH_KEY"]
+        auth_secret = os.environ["AUTH_SECRET"]
     authentication_policy = HELAuthenticationPolicy(
             auth_secret, hashalg='sha512')
     authorization_policy = ACLAuthorizationPolicy()
