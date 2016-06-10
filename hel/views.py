@@ -30,13 +30,13 @@ def home(request):
         request.logged_in = False
     if request.logged_in:
         nickname = request.authenticated_userid
-        if 'log-out' in request.params:
+        if 'log-out' in request.POST:
             headers = forget(request)
             return HTTPFound(location=request.url, headers=headers)
-    elif 'log-in' in request.params:
+    elif 'log-in' in request.POST:
         try:
-            nickname = request.params['nickname'].strip()
-            password = request.params['password'].strip()
+            nickname = request.POST['nickname'].strip()
+            password = request.POST['password'].strip()
         except KeyError:
             message = Messages.bad_request
         else:
@@ -58,12 +58,12 @@ def home(request):
                         message = Messages.failed_login
                 else:
                     message = Messages.failed_login
-    elif 'register' in request.params:
+    elif 'register' in request.POST:
         try:
-            nickname = request.params['nickname'].strip()
-            email = request.params['email'].strip()
-            password = request.params['password'].strip()
-            passwd_confirm = request.params['passwd-confirm'].strip()
+            nickname = request.POST['nickname'].strip()
+            email = request.POST['email'].strip()
+            password = request.POST['password'].strip()
+            passwd_confirm = request.POST['passwd-confirm'].strip()
         except KeyError:
             message = Messages.bad_request
         if nickname == '':
