@@ -77,6 +77,6 @@ def main(global_config, **settings):
 
     # Setup routes
     config.add_route('home', '/')
-    config.add_route('login', '/login')
+    config.add_route('teapot', '/teapot')
     config.scan()
     return config.make_wsgi_app()

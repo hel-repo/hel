@@ -124,6 +124,15 @@ def home(request):
     }
 
 
+# Someone requested this
+# Mmm, okay
+@view_config(route_name='teapot', renderer='json')
+def teapot(request):
+    return Response(
+        status="418 I'm a teapot",
+        content_type='application/json; charset=UTF-8')
+
+
 # Package controller
 @view_config(request_method='PUT',
              context=Package,
