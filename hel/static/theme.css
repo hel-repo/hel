@@ -71,6 +71,10 @@ p {
   background: #E9E9E9;
 }
 
+.js-hide-on-load {
+  display: none;
+}
+
 .red {
   color: #ffffff;
   background: #bc2131;

@@ -51,7 +51,7 @@
                 </div>
               </div>
 
-              <div id="log-in-form" tal:condition="not logged_in">
+              <div id="log-in-form" tal:condition="not logged_in" class="js-hide-on-load">
                 <form class="form-signin form-horizontal" method="post">
                   <label for="log-in-nickname" class="sr-only">Nickname</label>
                   <div class="col-sm-4" style="padding-left: 0px;">
@@ -65,7 +65,8 @@
                   <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
                 </form>
               </div>
-              <div id="register-form" tal:condition="not logged_in">
+
+              <div id="register-form" tal:condition="not logged_in" class="js-hide-on-load">
                 <form class="form-signin form-horizontal" method="post">
                   <!-- TODO: move styles to css file -->
                   <label for="reg-nickname" class="sr-only">Nickname</label>

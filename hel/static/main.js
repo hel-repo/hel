@@ -1,5 +1,7 @@
 window.onload = function() {
-  switchTo("main")
+  $("#log-in-form").className = "";
+  $("#register-form").className = "";
+  switchTo("main");
 }
 
 function switchTo(form) {
