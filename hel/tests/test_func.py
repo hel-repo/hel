@@ -120,15 +120,12 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(users[0]['nickname'], data['nickname'])
 
 
-class FunctionalTestsWithAuth(unittest.TestCase):
+class FunctionalAuthTests(unittest.TestCase):
 
     user = FunctionalTests.user
 
     setUp = FunctionalTests.setUp
     tearDown = FunctionalTests.tearDown
-
-    def __init__(self, *args, **kwargs):
-        unittest.TestCase.__init__(self, *args, **kwargs)
 
     def test_log_in_success(self):
         global auth_headers
@@ -155,10 +152,35 @@ class FunctionalTestsWithAuth(unittest.TestCase):
 
     def test_log_out(self):
         global auth_headers
-        print(auth_headers)
         res1 = self.test_app.post('/', {
                 'log-out': True
             }, headers=auth_headers, status=302)
         auth_headers = res1.headers
         res = self.test_app.get('/', headers=auth_headers, status=200)
         self.assertIsNotNone(res.html.find(id='login-message'))
+
+
+class FunctionTestsWithAuth(unittest.TestCase):
+
+    user = FunctionalAuthTests.user
+
+    def setUp(self):
+        FunctionalAuthTests.setUp(self)
+        data = copy.copy(self.user)
+        data['log-in'] = True
+        res = self.test_app.post('/', data, status=302)
+        headers = res.headers
+        auth_headers = ResponseHeaders()
+        for k, v in headers.items():
+            if k.lower() == 'set-cookie':
+                auth_headers.add('Cookie', v)
+            elif k.lower() not in ['content-type', 'content-length']:
+                auth_headers.add(k, v)
+        self.auth_headers = auth_headers
+
+    def tearDown(self):
+        FunctionalAuthTests.tearDown(self)
+        self.test_app.post('/', {
+                'log-out': True,
+            }, headers=auth_headers, status=302)
+        self.auth_headers = None
