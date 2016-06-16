@@ -139,6 +139,31 @@ def teapot(request):
              renderer='json',
              permission='pkg_update')
 def update_package(context, request):
+    query = {}
+    # TODO: make it safe
+    for k, v in request.json_body.items():
+        if k in ['name', 'description', 'owner', 'license']:
+            query[k] = str(v)
+        elif k == 'short_description':
+            query[k] = str(v)[:120]
+        elif k in ['authors', 'tags']:
+            query[k] = [str(x) for x in v]
+        elif k == 'versions':
+            for num, ver in enumerate(v):
+                if 'number' in ver:
+                    if 'files' in ver and ver['files'] is None:
+                        if '$pull' not in query:
+                            query['$pull'] = {}
+                        if 'versions' not in query['$pull']:
+                            query['$pull']['versions'] = {
+                                'number': {
+                                    '$in': []
+                                }
+                            }
+                        query['$pull']['versions']['number']['$in'] \
+                            .append(ver['number'])
+                    elif 'files' in ver or 'depends' in ver:
+                        pass
     context.update(request.json_body, True)
 
     return Response(
