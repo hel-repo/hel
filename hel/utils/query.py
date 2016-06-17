@@ -161,3 +161,17 @@ class PackagesSearchQuery:
     def __tostring__(self):
         self.__call__()
         return str(self.query)
+
+
+def check(value, expected_type, message=None):
+    if type(value) != expected_type:
+        raise HTTPBadRequest(detail=message)
+    return value
+
+
+def check_list_of_strs(value, message=None):
+    check(value, list, message)
+    for item in value:
+        if type(item) != str:
+            raise HTTPBadRequest(detail=message)
+    return value

@@ -12,7 +12,11 @@ from pyramid.view import view_config
 from hel.resources import Package, Packages, User, Users
 from hel.utils.messages import Messages
 from hel.utils.models import ModelUser
-from hel.utils.query import PackagesSearchQuery
+from hel.utils.query import (
+    PackagesSearchQuery,
+    check,
+    check_list_of_strs
+)
 
 
 log = logging.getLogger(__name__)
@@ -143,28 +147,52 @@ def update_package(context, request):
     # TODO: make it safe
     for k, v in request.json_body.items():
         if k in ['name', 'description', 'owner', 'license']:
-            query[k] = str(v)
+            query[k] = check(v, str)  # TODO: message
         elif k == 'short_description':
-            query[k] = str(v)[:120]
+            query[k] = check(v, str)[:120]  # TODO: message
         elif k in ['authors', 'tags']:
-            query[k] = [str(x) for x in v]
+            query[k] = check_list_of_strs(v)  # TODO: message
         elif k == 'versions':
+            check(v, list)  # TODO: message
             for num, ver in enumerate(v):
+                check(ver, dict)  # TODO: message
                 if 'number' in ver:
                     if 'files' in ver and ver['files'] is None:
-                        if '$pull' not in query:
-                            query['$pull'] = {}
-                        if 'versions' not in query['$pull']:
-                            query['$pull']['versions'] = {
-                                'number': {
-                                    '$in': []
-                                }
-                            }
-                        query['$pull']['versions']['number']['$in'] \
-                            .append(ver['number'])
-                    elif 'files' in ver or 'depends' in ver:
+                        # TODO: actually remove values!
+                        # if '$pull' not in query:
+                        #     query['$pull'] = {}
+                        # if 'versions' not in query['$pull']:
+                        #     query['$pull']['versions'] = {
+                        #         'number': {
+                        #             '$in': []
+                        #         }
+                        #     }
+                        # query['$pull']['versions']['number']['$in'] \
+                        #     .append(ver['number'])
                         pass
-    context.update(request.json_body, True)
+                    else:
+                        if 'files' in ver:
+                            check(ver['files'], list)
+                            for f in ver['files']:
+                                # TODO: how to identify files?
+                                pass
+                else:
+                    raise HTTPBadRequest()  # TODO: message
+        elif k == 'screenshots':
+            check(v, list)
+            for num, scr in enumerate(v):
+                if 'url' not in scr:
+                    raise HTTPBadRequest()  # TODO: message
+                if 'description' not in scr:
+                    raise HTTPBadRequest()
+                check(url, str)  # TODO: message
+                if scr['description'] is None:
+                    # TODO: actually remove values!
+                    pass
+                else:
+                    check(scr['description'], str)  # TODO: message
+                    # TODO: make it work
+    context.update(query, True)
 
     return Response(
         status='202 Accepted',
