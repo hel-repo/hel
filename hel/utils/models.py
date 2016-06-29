@@ -12,7 +12,7 @@ class ModelPackage:
             'authors': [],
             'license': '',
             'tags': [],
-            'versions': [],
+            'versions': {},
             'screenshots': []
         }
 
@@ -22,23 +22,27 @@ class ModelPackage:
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
             elif k == 'versions':
-                for num, ver in enumerate(v):
-                    v[num] = {
-                        'number': str(ver['number']),
-                        'files': [{'url': str(x['url']),
-                                   'dir': str(x['dir']),
-                                   'name': str(x['name'])}
-                                  for x in ver['files']],
-                        'depends': [{'name': str(x['name']),
-                                     'version': str(x['version']),
-                                     'type': str(x['type'])}
-                                    for x in ver['depends']]
+                for ver, value in v:
+                    files = {}
+                    for file_url, f in value['files']:
+                        files[str(file_url)] = {
+                            'dir': str(f['dir']),
+                            'name': str(f['name'])
+                        }
+                    dependencies = {}
+                    for dep_name, dep_info in value['depends']:
+                        dependencies[str(dep_name)] = {
+                            'version': str(dep_info['version']),
+                            'type': str(dep_info['type'])
+                        }
+                    v[str(ver)] = {
+                        'files': files,
+                        'depends': dependencies
                     }
                 self.data[k] = v
             elif k == 'screenshots':
-                self.data[k] = [{'url': str(x['url']),
-                                 'description': str(x['description'])}
-                                for x in v]
+                self.data[k] = {str(url): str(desc)
+                                for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
 

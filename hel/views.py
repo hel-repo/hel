@@ -3,7 +3,7 @@ import hashlib
 import logging
 import os
 
-from pyramid.httpexceptions import HTTPNotFound, HTTPFound
+from pyramid.httpexceptions import HTTPNotFound, HTTPFound, HTTPBadRequest
 from pyramid.request import Request
 from pyramid.response import Response
 from pyramid.security import remember, forget
@@ -185,7 +185,7 @@ def update_package(context, request):
                     raise HTTPBadRequest()  # TODO: message
                 if 'description' not in scr:
                     raise HTTPBadRequest()
-                check(url, str)  # TODO: message
+                check(scr['url'], str)  # TODO: message
                 if scr['description'] is None:
                     # TODO: actually remove values!
                     pass
