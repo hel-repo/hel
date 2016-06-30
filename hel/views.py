@@ -10,9 +10,15 @@ from pyramid.security import remember, forget
 from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelUser
-from hel.utils.query import PackagesSearchQuery
+from hel.utils.query import (
+    PackagesSearchQuery,
+    check,
+    check_list_of_strs,
+    replace_chars_in_keys
+)
 
 
 log = logging.getLogger(__name__)
@@ -140,31 +146,87 @@ def teapot(request):
              permission='pkg_update')
 def update_package(context, request):
     query = {}
-    # TODO: make it safe
     for k, v in request.json_body.items():
         if k in ['name', 'description', 'owner', 'license']:
-            query[k] = str(v)
+            query[k] = check(v, str)  # TODO: message
         elif k == 'short_description':
-            query[k] = str(v)[:120]
+            query[k] = check(v, str)[:120]  # TODO: message
         elif k in ['authors', 'tags']:
-            query[k] = [str(x) for x in v]
+            query[k] = check_list_of_strs(v)  # TODO: message
         elif k == 'versions':
-            for num, ver in enumerate(v):
-                if 'number' in ver:
-                    if 'files' in ver and ver['files'] is None:
-                        if '$pull' not in query:
-                            query['$pull'] = {}
-                        if 'versions' not in query['$pull']:
-                            query['$pull']['versions'] = {
-                                'number': {
-                                    '$in': []
-                                }
-                            }
-                        query['$pull']['versions']['number']['$in'] \
-                            .append(ver['number'])
-                    elif 'files' in ver or 'depends' in ver:
-                        pass
-    context.update(request.json_body, True)
+            check(v, dict)  # TODO: message
+            for num, ver in v.items():
+                check(num, str)  # TODO: message
+                if ver is None:
+                    query[k] = query[k] or {}
+                    query[k]['versions'] = query[k]['versions'] or {}
+                    query[k]['versions'][num] = None
+                else:
+                    check(ver, dict)  # TODO: message
+                    if 'files' in ver:
+                        check(ver['files'], dict)  # TODO: message
+                        for url, file_info in ver['files'].items():
+                            if file_info is None:
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                query[k]['versions'][num]['files'][url] = None
+                            else:
+                                check(file_info, dict)
+                                check(url, str)  # TODO: message
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                if ('dir' in file_info and
+                                        # TODO: message
+                                        check(file_info['dir'], str) or
+                                        'name' in file_info and
+                                        # TODO: message
+                                        check(file_info['name'], str)):
+                                    (query[k]['versions'][num]['files']
+                                     [url]) = {}
+                                if 'dir' in file_info:
+                                    (query[k]['versions'][num]['files']
+                                     [url]['dir']) = file_info['dir']
+                                if 'name' in file_info:
+                                    (query[k]['versions'][num]['files']
+                                     [url]['dir']) = file_info['name']
+
+                    if 'depends' in ver:
+                        check(ver['depends'], dict)
+                        for dep_name, dep_info in ver['depends'].items():
+                            if dep_info is None:
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                if ('version' in dep_info and
+                                        # TODO: message
+                                        check(dep_info['version'], str) or
+                                        'type' in dep_info and
+                                        # TODO: message
+                                        check(dep_info['type'], str)):
+                                    query[k]['versions'][num]['depends'] = {}
+                                if 'version' in dep_info:
+                                    (query[k]['versions'][num]['depends']
+                                     [dep_name]['version']) = (
+                                        dep_info['version'])
+                                if 'type' in dep_info:
+                                    (query[k]['versions'][num]['depends']
+                                     [dep_name]['type']) = dep_info['type']
+        elif k == 'screenshots':
+            check(v, dict)
+            for url, desc in v:
+                check(url, str)  # TODO: message
+                if desc is None or check(desc, str):  # TODO: message
+                    query[k][url] = desc
+    query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
+    context.update(query, True)
 
     return Response(
         status='202 Accepted',

@@ -1,5 +1,8 @@
 import json
 
+from hel.utils.query import replace_chars_in_keys
+from hel.utils.constants import Constants
+
 
 class ModelPackage:
 
@@ -12,8 +15,8 @@ class ModelPackage:
             'authors': [],
             'license': '',
             'tags': [],
-            'versions': [],
-            'screenshots': []
+            'versions': {},
+            'screenshots': {}
         }
 
         for k, v in kwargs.items():
@@ -22,31 +25,40 @@ class ModelPackage:
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
             elif k == 'versions':
-                for num, ver in enumerate(v):
-                    v[num] = {
-                        'number': str(ver['number']),
-                        'files': [{'url': str(x['url']),
-                                   'dir': str(x['dir']),
-                                   'name': str(x['name'])}
-                                  for x in ver['files']],
-                        'depends': [{'name': str(x['name']),
-                                     'version': str(x['version']),
-                                     'type': str(x['type'])}
-                                    for x in ver['depends']]
+                for ver, value in v.items():
+                    files = {}
+                    for file_url, f in value['files'].items():
+                        files[str(file_url)] = {
+                            'dir': str(f['dir']),
+                            'name': str(f['name'])
+                        }
+                    dependencies = {}
+                    for dep_name, dep_info in value['depends'].items():
+                        dependencies[str(dep_name)] = {
+                            'version': str(dep_info['version']),
+                            'type': str(dep_info['type'])
+                        }
+                    v[str(ver)] = {
+                        'files': files,
+                        'depends': dependencies
                     }
                 self.data[k] = v
             elif k == 'screenshots':
-                self.data[k] = [{'url': str(x['url']),
-                                 'description': str(x['description'])}
-                                for x in v]
+                self.data[k] = {str(url): str(desc)
+                                for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
 
     def json(self):
-        return json.dumps(self.data)
+        return json.dumps(self.pkg)
+
+    @property
+    def pkg(self):
+        return replace_chars_in_keys(
+            self.data, '.', Constants.key_replace_char)
 
     def __str__(self):
-        return self.json()
+        return json.dumps(self.data)
 
 
 class ModelUser:
