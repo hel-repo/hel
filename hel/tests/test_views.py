@@ -143,134 +143,104 @@ class PkgSearchTests(unittest.TestCase):
         authors=['Tester', 'Crackes'],
         license='mylicense-1',
         tags=['aaa', 'xxx', 'zzz'],
-        versions=[
-            {
-                'number': '1.1.1',
-                'files': [
-                    {
-                        'url': 'http://example.com/file17',
+        versions={
+            '1.1.1': {
+                'files': {
+                    'http://example.com/file17': {
                         'dir': '/bin',
                         'name': 'test-1-file-7'
                     },
-                    {
-                        'url': 'http://example.com/file18',
+                    'http://example.com/file18': {
                         'dir': '/lib',
                         'name': 'test-1-file-8'
                     },
-                    {
-                        'url': 'http://example.com/file19',
+                    'http://example.com/file19': {
                         'dir': '/man',
                         'name': 'test-1-file-9'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-1',
+                },
+                'depends': {
+                    'dpackage-1': {
                         'version': '1.1^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-2',
+                    'dpackage-2': {
                         'version': '5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-3',
+                    'dpackage-3': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.1.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file14',
+            '1.1.0': {
+                'files': {
+                    'http://example.com/file14': {
                         'dir': '/bin',
                         'name': 'test-1-file-4'
                     },
-                    {
-                        'url': 'http://example.com/file15',
+                    'http://example.com/file15': {
                         'dir': '/lib',
                         'name': 'test-1-file-5'
                     },
-                    {
-                        'url': 'http://example.com/file16',
+                    'http://example.com/file16': {
                         'dir': '/man',
                         'name': 'test-1-file-6'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-1',
+                },
+                'depends': {
+                    'dpackage-1': {
                         'version': '1.1^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-2',
+                    'dpackage-2': {
                         'version': '5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-3',
+                    'dpackage-3': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.0.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file11',
+            '1.0.0': {
+                'files': {
+                    'http://example.com/file11': {
                         'dir': '/bin',
                         'name': 'test-1-file-1'
                     },
-                    {
-                        'url': 'http://example.com/file12',
+                    'http://example.com/file12': {
                         'dir': '/lib',
                         'name': 'test-1-file-2'
                     },
-                    {
-                        'url': 'http://example.com/file13',
+                    'http://example.com/file13': {
                         'dir': '/man',
                         'name': 'test-1-file-3'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-1',
+                },
+                'depends': {
+                    'dpackage-1': {
                         'version': '1.1^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-2',
+                    'dpackage-2': {
                         'version': '5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-3',
+                    'dpackage-3': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             }
-        ],
-        screenshots=[
-            {
-                'url': 'http://img.example.com/img11',
-                'description': 'test-1-img-1'
-            },
-            {
-                'url': 'http://img.example.com/img12',
-                'description': 'test-1-img-2'
-            },
-            {
-                'url': 'http://img.example.com/img13',
-                'description': 'test-1-img-3'
-            }
-        ]
-    ).data
+        },
+        screenshots={
+            'http://img.example.com/img11': 'test-1-img-1',
+            'http://img.example.com/img12': 'test-1-img-2',
+            'http://img.example.com/img13': 'test-1-img-3'
+        }
+    ).pkg
 
     pkg2 = ModelPackage(
         name='package-2',
@@ -280,134 +250,104 @@ class PkgSearchTests(unittest.TestCase):
         authors=['Tester', 'Kjers'],
         license='mylicense-2',
         tags=['xxx', 'yyy', 'ccc'],
-        versions=[
-            {
-                'number': '1.0.2',
-                'files': [
-                    {
-                        'url': 'http://example.com/file27',
+        versions={
+            '1.0.2': {
+                'files': {
+                    'http://example.com/file27': {
                         'dir': '/bin',
                         'name': 'test-2-file-7'
                     },
-                    {
-                        'url': 'http://example.com/file28',
+                    'http://example.com/file28': {
                         'dir': '/lib',
                         'name': 'test-2-file-8'
                     },
-                    {
-                        'url': 'http://example.com/file29',
+                    'http://example.com/file29': {
                         'dir': '/man',
                         'name': 'test-2-file-9'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-4',
+                },
+                'depends': {
+                    'dpackage-4': {
                         'version': '1.*',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-5',
+                    'dpackage-5': {
                         'version': '3.5.6^',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-6',
+                    'dpackage-6': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.0.1',
-                'files': [
-                    {
-                        'url': 'http://example.com/file24',
+            '1.0.1': {
+                'files': {
+                    'http://example.com/file24': {
                         'dir': '/bin',
                         'name': 'test-2-file-4'
                     },
-                    {
-                        'url': 'http://example.com/file25',
+                    'http://example.com/file25': {
                         'dir': '/lib',
                         'name': 'test-2-file-5'
                     },
-                    {
-                        'url': 'http://example.com/file26',
+                    'http://example.com/file26': {
                         'dir': '/man',
                         'name': 'test-2-file-6'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-4',
+                },
+                'depends': {
+                    'dpackage-4': {
                         'version': '1.*',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-5',
+                    'dpackage-5': {
                         'version': '3.5.6^',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-6',
+                    'dpackage-6': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.0.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file21',
+            '1.0.0': {
+                'files': {
+                    'http://example.com/file21': {
                         'dir': '/bin',
                         'name': 'test-2-file-1'
                     },
-                    {
-                        'url': 'http://example.com/file22',
+                    'http://example.com/file22': {
                         'dir': '/lib',
                         'name': 'test-2-file-2'
                     },
-                    {
-                        'url': 'http://example.com/file23',
+                    'http://example.com/file23': {
                         'dir': '/man',
                         'name': 'test-2-file-3'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-4',
+                },
+                'depends': {
+                    'dpackage-4': {
                         'version': '1.*',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-5',
+                    'dpackage-5': {
                         'version': '3.5.6^',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-6',
+                    'dpackage-6': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             }
-        ],
-        screenshots=[
-            {
-                'url': 'http://img.example.com/img21',
-                'description': 'test-2-img-1'
-            },
-            {
-                'url': 'http://img.example.com/img22',
-                'description': 'test-2-img-2'
-            },
-            {
-                'url': 'http://img.example.com/img23',
-                'description': 'test-2-img-3'
-            }
-        ]
-    ).data
+        },
+        screenshots={
+            'http://img.example.com/img21': 'test-2-img-1',
+            'http://img.example.com/img22': 'test-2-img-2',
+            'http://img.example.com/img23': 'test-2-img-3'
+        }
+    ).pkg
 
     pkg3 = ModelPackage(
         name='package-3',
@@ -417,134 +357,104 @@ class PkgSearchTests(unittest.TestCase):
         authors=['Tester', 'Nyemst'],
         license='mylicense-3',
         tags=['aaa', 'ccc', 'zzz'],
-        versions=[
-            {
-                'number': '1.2.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file37',
+        versions={
+            '1.2.0': {
+                'files': {
+                    'http://example.com/file37': {
                         'dir': '/bin',
                         'name': 'test-3-file-7'
                     },
-                    {
-                        'url': 'http://example.com/file38',
+                    'http://example.com/file38': {
                         'dir': '/lib',
                         'name': 'test-3-file-8'
                     },
-                    {
-                        'url': 'http://example.com/file39',
+                    'http://example.com/file39': {
                         'dir': '/man',
                         'name': 'test-3-file-9'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-7',
+                },
+                'depends': {
+                    'dpackage-7': {
                         'version': '1.12.51^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-8',
+                    'dpackage-8': {
                         'version': '3.5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-9',
+                    'dpackage-9': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.1.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file34',
+            '1.1.0': {
+                'files': {
+                    'http://example.com/file34': {
                         'dir': '/bin',
                         'name': 'test-3-file-4'
                     },
-                    {
-                        'url': 'http://example.com/file35',
+                    'http://example.com/file35': {
                         'dir': '/lib',
                         'name': 'test-3-file-5'
                     },
-                    {
-                        'url': 'http://example.com/file36',
+                    'http://example.com/file36': {
                         'dir': '/man',
                         'name': 'test-3-file-6'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-7',
+                },
+                'depends': {
+                    'dpackage-7': {
                         'version': '1.12.51^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-8',
+                    'dpackage-8': {
                         'version': '3.5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-9',
+                    'dpackage-9': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             },
-            {
-                'number': '1.0.0',
-                'files': [
-                    {
-                        'url': 'http://example.com/file31',
+            '1.0.0': {
+                'files': {
+                    'http://example.com/file31': {
                         'dir': '/bin',
                         'name': 'test-3-file-1'
                     },
-                    {
-                        'url': 'http://example.com/file32',
+                    'http://example.com/file32': {
                         'dir': '/lib',
                         'name': 'test-3-file-2'
                     },
-                    {
-                        'url': 'http://example.com/file33',
+                    'http://example.com/file33': {
                         'dir': '/man',
                         'name': 'test-3-file-3'
                     }
-                ],
-                'depends': [
-                    {
-                        'name': 'dpackage-7',
+                },
+                'depends': {
+                    'dpackage-7': {
                         'version': '1.12.51^',
                         'type': 'required'
                     },
-                    {
-                        'name': 'dpackage-8',
+                    'dpackage-8': {
                         'version': '3.5.*',
                         'type': 'optional'
                     },
-                    {
-                        'name': 'dpackage-9',
+                    'dpackage-9': {
                         'version': '*',
                         'type': 'recommended'
                     }
-                ]
+                }
             }
-        ],
-        screenshots=[
-            {
-                'url': 'http://img.example.com/img31',
-                'description': 'test-3-img-1'
-            },
-            {
-                'url': 'http://img.example.com/img32',
-                'description': 'test-3-img-2'
-            },
-            {
-                'url': 'http://img.example.com/img33',
-                'description': 'test-3-img-3'
-            }
-        ]
-    ).data
+        },
+        screenshots={
+            'http://img.example.com/img31': 'test-3-img-1',
+            'http://img.example.com/img32': 'test-3-img-2',
+            'http://img.example.com/img33': 'test-3-img-3'
+        }
+    ).pkg
 
     def setUp(self):
         from pymongo import MongoClient

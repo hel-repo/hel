@@ -18,6 +18,7 @@ def concat_params(params, op='or'):
         raise ValueError
 
 
+# FIXME: fix the search after changing package model
 class PackagesSearchParams:
     """Provides methods for converting GET-params to MongoDB query"""
 
@@ -90,7 +91,7 @@ class PackagesSearchParams:
         """Returns packages depending on specific packages.
 
         Param format: <name>[:<version>[:<type>]]
-        Logical OR is used to concatenate params.
+        Logical AND is used to concatenate params.
         """
 
         search_query = []
@@ -109,15 +110,15 @@ class PackagesSearchParams:
                 append_list.append({'versions.depends.type': dep_full[2]})
 
             search_query.append({'$and': append_list})
-        return concat_params(search_query)
+        return concat_params(search_query, 'and')
 
     def screen_url(param):
         """Search by screenshot URL.
 
-        Logical OR is used to concatenate params.
+        Logical AND is used to concatenate params.
         """
 
-        return {'screenshots.url': {'$in': [str(x) for x in param]}}
+        return {'screenshots.url': {'$all': [str(x) for x in param]}}
 
     @_only_one_param
     def screen_desc(param):
@@ -175,3 +176,18 @@ def check_list_of_strs(value, message=None):
         if type(item) != str:
             raise HTTPBadRequest(detail=message)
     return value
+
+
+def replace_chars_in_keys(d, repl_chr, repl_to):
+    try:
+        result = {}
+        for k, v in d.items():
+            result[k.replace(repl_chr, repl_to)] = replace_chars_in_keys(
+                v, repl_chr, repl_to)
+    except ValueError:
+        return d
+    except TypeError:
+        return d
+    except AttributeError:
+        return d
+    return result

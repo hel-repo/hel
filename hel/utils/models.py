@@ -1,5 +1,8 @@
 import json
 
+from hel.utils.query import replace_chars_in_keys
+from hel.utils.constants import Constants
+
 
 class ModelPackage:
 
@@ -24,13 +27,13 @@ class ModelPackage:
             elif k == 'versions':
                 for ver, value in v.items():
                     files = {}
-                    for file_url, f in value['files']:
+                    for file_url, f in value['files'].items():
                         files[str(file_url)] = {
                             'dir': str(f['dir']),
                             'name': str(f['name'])
                         }
                     dependencies = {}
-                    for dep_name, dep_info in value['depends']:
+                    for dep_name, dep_info in value['depends'].items():
                         dependencies[str(dep_name)] = {
                             'version': str(dep_info['version']),
                             'type': str(dep_info['type'])
@@ -47,10 +50,15 @@ class ModelPackage:
                 self.data[k] = str(v)[:140]
 
     def json(self):
-        return json.dumps(self.data)
+        return json.dumps(self.pkg)
+
+    @property
+    def pkg(self):
+        return replace_chars_in_keys(
+            self.data, '.', Constants.key_replace_char)
 
     def __str__(self):
-        return self.json()
+        return json.dumps(self.data)
 
 
 class ModelUser:

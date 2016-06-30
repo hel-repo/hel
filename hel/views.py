@@ -3,19 +3,21 @@ import hashlib
 import logging
 import os
 
-from pyramid.httpexceptions import HTTPNotFound, HTTPFound, HTTPBadRequest
+from pyramid.httpexceptions import HTTPNotFound, HTTPFound
 from pyramid.request import Request
 from pyramid.response import Response
 from pyramid.security import remember, forget
 from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelUser
 from hel.utils.query import (
     PackagesSearchQuery,
     check,
-    check_list_of_strs
+    check_list_of_strs,
+    replace_chars_in_keys
 )
 
 
@@ -198,6 +200,7 @@ def update_package(context, request):
                 check(url, str)  # TODO: message
                 if desc is None or check(desc, str):  # TODO: message
                     query[k][url] = desc
+    query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
     return Response(
