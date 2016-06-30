@@ -13,7 +13,7 @@ class ModelPackage:
             'license': '',
             'tags': [],
             'versions': {},
-            'screenshots': []
+            'screenshots': {}
         }
 
         for k, v in kwargs.items():
@@ -22,7 +22,7 @@ class ModelPackage:
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
             elif k == 'versions':
-                for ver, value in v:
+                for ver, value in v.items():
                     files = {}
                     for file_url, f in value['files']:
                         files[str(file_url)] = {

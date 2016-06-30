@@ -153,45 +153,51 @@ def update_package(context, request):
         elif k in ['authors', 'tags']:
             query[k] = check_list_of_strs(v)  # TODO: message
         elif k == 'versions':
-            check(v, list)  # TODO: message
-            for num, ver in enumerate(v):
-                check(ver, dict)  # TODO: message
-                if 'number' in ver:
-                    if 'files' in ver and ver['files'] is None:
-                        # TODO: actually remove values!
-                        # if '$pull' not in query:
-                        #     query['$pull'] = {}
-                        # if 'versions' not in query['$pull']:
-                        #     query['$pull']['versions'] = {
-                        #         'number': {
-                        #             '$in': []
-                        #         }
-                        #     }
-                        # query['$pull']['versions']['number']['$in'] \
-                        #     .append(ver['number'])
-                        pass
-                    else:
-                        if 'files' in ver:
-                            check(ver['files'], list)
-                            for f in ver['files']:
-                                # TODO: how to identify files?
-                                pass
+            check(v, dict)  # TODO: message
+            for num, ver in v.items():
+                check(num, str)  # TODO: message
+                if ver is None:
+                    query[k] = query[k] or {}
+                    query[k]['versions'] = query[k]['versions'] or {}
+                    query[k]['versions'][num] = None
                 else:
-                    raise HTTPBadRequest()  # TODO: message
+                    check(ver, dict)  # TODO: message
+                    if 'files' in ver:
+                        check(ver['files'], dict)  # TODO: message
+                        for url, file_info in ver['files'].items():
+                            if file_info is None:
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                query[k]['versions'][num]['files'][url] = None
+                            else:
+                                check(file_info, dict)
+                                check(url, str)  # TODO: message
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                if ('dir' in file_info and
+                                        check(file_info['dir'], str) or
+                                        'name' in file_info and
+                                        check(file_info['name'], str)):
+                                    (query[k]['versions'][num]['files']
+                                     [url]) = {}
+                                if 'dir' in file_info:
+                                    (query[k]['versions'][num]['files']
+                                     [url]['dir']) = file_info['dir']
+                                if 'name' in file_info:
+                                    (query[k]['versions'][num]['files']
+                                     [url]['dir']) = file_info['name']
         elif k == 'screenshots':
-            check(v, list)
-            for num, scr in enumerate(v):
-                if 'url' not in scr:
-                    raise HTTPBadRequest()  # TODO: message
-                if 'description' not in scr:
-                    raise HTTPBadRequest()
-                check(scr['url'], str)  # TODO: message
-                if scr['description'] is None:
-                    # TODO: actually remove values!
-                    pass
-                else:
-                    check(scr['description'], str)  # TODO: message
-                    # TODO: make it work
+            check(v, dict)
+            for url, desc in v:
+                check(url, str)  # TODO: message
+                if desc is None or check(desc, str):  # TODO: message
+                    query[k][url] = desc
     context.update(query, True)
 
     return Response(
