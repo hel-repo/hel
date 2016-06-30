@@ -146,7 +146,6 @@ def teapot(request):
              permission='pkg_update')
 def update_package(context, request):
     query = {}
-    # TODO: make it safe
     for k, v in request.json_body.items():
         if k in ['name', 'description', 'owner', 'license']:
             query[k] = check(v, str)  # TODO: message
@@ -183,8 +182,10 @@ def update_package(context, request):
                                 query[k]['versions'][num] = (
                                     query[k]['versions'][num] or {})
                                 if ('dir' in file_info and
+                                        # TODO: message
                                         check(file_info['dir'], str) or
                                         'name' in file_info and
+                                        # TODO: message
                                         check(file_info['name'], str)):
                                     (query[k]['versions'][num]['files']
                                      [url]) = {}
@@ -194,6 +195,30 @@ def update_package(context, request):
                                 if 'name' in file_info:
                                     (query[k]['versions'][num]['files']
                                      [url]['dir']) = file_info['name']
+
+                    if 'depends' in ver:
+                        check(ver['depends'], dict)
+                        for dep_name, dep_info in ver['depends'].items():
+                            if dep_info is None:
+                                query[k] = query[k] or {}
+                                query[k]['versions'] = (
+                                    query[k]['versions'] or {})
+                                query[k]['versions'][num] = (
+                                    query[k]['versions'][num] or {})
+                                if ('version' in dep_info and
+                                        # TODO: message
+                                        check(dep_info['version'], str) or
+                                        'type' in dep_info and
+                                        # TODO: message
+                                        check(dep_info['type'], str)):
+                                    query[k]['versions'][num]['depends'] = {}
+                                if 'version' in dep_info:
+                                    (query[k]['versions'][num]['depends']
+                                     [dep_name]['version']) = (
+                                        dep_info['version'])
+                                if 'type' in dep_info:
+                                    (query[k]['versions'][num]['depends']
+                                     [dep_name]['type']) = dep_info['type']
         elif k == 'screenshots':
             check(v, dict)
             for url, desc in v:
