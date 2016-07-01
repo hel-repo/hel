@@ -60,6 +60,7 @@ class PackagesSearchParams:
 
         return {'tags': concat_params([str(x) for x in param], 'all')}
 
+    # FIXME: I'm broken
     def file_url(param):
         """Search by file URL.
 
@@ -67,8 +68,9 @@ class PackagesSearchParams:
         """
 
         return {'versions.files.url': concat_params([str(x) for x in param],
-                'all')}
+                                                    'all')}
 
+    # FIXME: I'm broken
     def file_dir(param):
         """Search by directory.
 
@@ -76,8 +78,9 @@ class PackagesSearchParams:
         """
 
         return {'versions.files.dir': concat_params([str(x) for x in param],
-                'all')}
+                                                    'all')}
 
+    # FIXME: I'm broken
     def file_name(param):
         """Search by file name.
 
@@ -85,8 +88,9 @@ class PackagesSearchParams:
         """
 
         return {'versions.files.name': concat_params([str(x) for x in param],
-                'all')}
+                                                     'all')}
 
+    # FIXME: I'm broken
     def dependency(param):
         """Returns packages depending on specific packages.
 
@@ -112,6 +116,7 @@ class PackagesSearchParams:
             search_query.append({'$and': append_list})
         return concat_params(search_query, 'and')
 
+    # FIXME: I'm broken
     def screen_url(param):
         """Search by screenshot URL.
 
@@ -120,6 +125,7 @@ class PackagesSearchParams:
 
         return {'screenshots.url': {'$all': [str(x) for x in param]}}
 
+    # FIXME: I'm broken
     @_only_one_param
     def screen_desc(param):
         """Search by screenshot description regex"""
@@ -159,7 +165,7 @@ class PackagesSearchQuery:
         self.query = query
         return query
 
-    def __tostring__(self):
+    def __str__(self):
         self.__call__()
         return str(self.query)
 
