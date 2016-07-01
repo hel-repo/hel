@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from pyramid import testing
@@ -549,7 +550,10 @@ class PkgSearchTests(unittest.TestCase):
     def setUp(self):
         from pymongo import MongoClient
 
-        self.client = MongoClient('mongodb://localhost:37017')
+        url = 'mongodb://localhost:37017'
+        if 'HEL_TESTING_MONGODB_ADDR' in os.environ:
+            url = os.environ['HEL_TESTING_MONGODB_ADDR']
+        self.client = MongoClient(url)
         self.db = self.client.hel
         self.db['packages'].delete_many({})
         self.db['packages'].insert_one(self.pkg1)

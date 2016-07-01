@@ -4,5 +4,7 @@ python:
 install:
   - pip install -e .
   - pip install -e '.[testing]'
-# command to run tests
+services: mongodb
+env:
+  - HEL_TESTING_MONGODB_ADDR='mongodb://localhost:27017'
 script: py.test

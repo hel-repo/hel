@@ -1,4 +1,5 @@
 import copy
+import os
 import unittest
 from webob.headers import ResponseHeaders
 
@@ -23,6 +24,8 @@ class FunctionalTests(unittest.TestCase):
         if not deleted:
             from pymongo import MongoClient
             url = 'mongodb://localhost:37017'
+            if 'HEL_TESTING_MONGODB_ADDR' in os.environ:
+                url = os.environ['HEL_TESTING_MONGODB_ADDR']
             mongo = MongoClient(url)
             db = mongo.hel
             users = db['users']
@@ -31,10 +34,13 @@ class FunctionalTests(unittest.TestCase):
             deleted = True
 
     def setUp(self):
+        url = 'mongodb://localhost:37017'
+        if 'HEL_TESTING_MONGODB_ADDR' in os.environ:
+            url = os.environ['HEL_TESTING_MONGODB_ADDR']
         settings = {
             'activation.length': 64,
             'activation.time': 10,
-            'mongo_db_url': 'mongodb://localhost:37017'
+            'mongo_db_url': url
         }
         from hel import main
         app = main({}, **settings)
