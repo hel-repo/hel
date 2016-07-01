@@ -2,6 +2,16 @@ Hel Package Repository
 ======================
 A package database and repository of OpenComputers & ComputerCraft programs.
 
+Build Status
+------------
+Master branch: 
+.. image:: https://travis-ci.org/hel-repo/hel.svg?branch=master
+   :alt: Travis CI build status
+
+Dev branch: 
+.. image:: https://travis-ci.org/hel-repo/hel.svg?branch=dev
+   :alt: Travis CI build status
+
 Getting Started - Usage
 -----------------------
 Just open this link in your favorite browser:
