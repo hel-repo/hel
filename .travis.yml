@@ -5,4 +5,4 @@ install:
   - pip install -e .
   - pip install -e '.[testing]'
 # command to run tests
-script: pytest
+script: py.test
