@@ -44,4 +44,4 @@ And there's the command to actually run tests:
 
 ``$ $VENV/bin/py.test``
 
-By default, it also performs "PEP8 sanity checks", and stops on first failture.
+By default, it also performs "PEP8 sanity checks", and stops after fifth failture.
