@@ -8,11 +8,11 @@ Master branch: |travis-ci-master|
 
 Dev branch: |travis-ci-dev|
 
-.. |travis-ci-master| image:: https://travis-ci.org/hel-repo/hel.svg?branch=dev
+.. |travis-ci-master| image:: https://travis-ci.org/hel-repo/hel.svg?branch=master
    :alt: Travis CI build status
    :target: https://travis-ci.org/hel-repo/hel
 
-.. |travis-ci-dev| image:: https://travis-ci.org/hel-repo/hel.svg?branch=master
+.. |travis-ci-dev| image:: https://travis-ci.org/hel-repo/hel.svg?branch=dev
    :alt: Travis CI build status
    :target: https://travis-ci.org/hel-repo/hel
 
