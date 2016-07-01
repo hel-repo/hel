@@ -101,7 +101,7 @@
               </div>
               <div class="col-sm-5 card">
                 <h2>Open Source</h2>
-                <p>Take part in development of the repository. Full source code of the project is available on <a href="https://github.com/MoonlightOwl/hel">GitHub</a></p>
+                <p>Take part in development of the repository. Full source code of the project is available on <a href="https://github.com/hel-repo/hel">GitHub</a></p>
               </div>
             </div>
             <div style="overflow: hidden;">
@@ -121,8 +121,8 @@
             <div class="links">
               <ul>
                 <li class="current-version">v 0.1.0</li>
-                <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/MoonlightOwl/hel/wiki">Docs</a></li>
-                <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/MoonlightOwl/hel">Github Project</a></li>
+                <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/hel-repo/hel/wiki">Docs</a></li>
+                <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/hel-repo/hel">Github Project</a></li>
                 <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="http://webchat.esper.net/?channels=#cc.ru">IRC Channel</a></li>
                 <li><i class="glyphicon glyphicon-home icon-muted"></i><a href="http://computercraft.ru">ComputerCraft.ru Project</a></li>
               </ul>

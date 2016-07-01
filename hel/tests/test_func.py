@@ -1,4 +1,5 @@
 import copy
+import os
 import unittest
 from webob.headers import ResponseHeaders
 
@@ -7,6 +8,9 @@ from hel.utils.messages import Messages
 
 deleted = False
 auth_headers = None
+mongodb_url = 'mongodb://localhost:37017'
+if 'HEL_TESTING_MONGODB_ADDR' in os.environ:
+    mongodb_url = os.environ['HEL_TESTING_MONGODB_ADDR']
 
 
 class FunctionalTests(unittest.TestCase):
@@ -22,8 +26,7 @@ class FunctionalTests(unittest.TestCase):
         global deleted
         if not deleted:
             from pymongo import MongoClient
-            url = 'mongodb://localhost:37017'
-            mongo = MongoClient(url)
+            mongo = MongoClient(mongodb_url)
             db = mongo.hel
             users = db['users']
             users.delete_many({})
@@ -34,7 +37,7 @@ class FunctionalTests(unittest.TestCase):
         settings = {
             'activation.length': 64,
             'activation.time': 10,
-            'mongo_db_url': 'mongodb://localhost:37017'
+            'mongo_db_url': mongodb_url
         }
         from hel import main
         app = main({}, **settings)
@@ -113,7 +116,7 @@ class FunctionalTests(unittest.TestCase):
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.account_created_success)
-        client = MongoClient('mongodb://localhost:37017')
+        client = MongoClient(mongodb_url)
         users = [x for x in client.hel['users'].find()]
         client.close()
         self.assertEqual(len(users), 1)

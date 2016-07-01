@@ -1,0 +1,10 @@
+language: python
+python:
+  - "3.5"
+install:
+  - pip install -e .
+  - pip install -e '.[testing]'
+services: mongodb
+env:
+  - HEL_TESTING_MONGODB_ADDR='mongodb://localhost:27017'
+script: py.test
