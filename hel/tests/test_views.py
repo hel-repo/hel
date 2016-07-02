@@ -573,8 +573,9 @@ class PkgSearchTests(unittest.TestCase):
     def test_pkg_search_screen_url(self):
         return [
             (['http://img.example.com/img11',
-              'http://img.example.com/img31'], [self.pkg1, self.pkg3],),
+              'http://img.example.com/img31'], [],),
             (['http://img.example.com/img21',
               'http://img.example.com/img23'], [self.pkg2],),
-            (['http://img.example.com/img42'], [],)
+            (['http://img.example.com/img42'], [],),
+            (['http://img.example.com/img32'], [self.pkg3],)
         ]

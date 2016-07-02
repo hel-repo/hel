@@ -1,5 +1,6 @@
 from pyramid.httpexceptions import HTTPBadRequest
 
+from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 
 
@@ -16,6 +17,14 @@ def concat_params(params, op='or'):
         return params[0]
     else:
         raise ValueError
+
+
+def str_repl(s, repl_from, repl_to):
+    return str(s).replace(repl_from, repl_to)
+
+
+def undot(s):
+    return str_repl(s, '.', Constants.key_replace_char)
 
 
 # FIXME: fix the search after changing package model
@@ -116,14 +125,13 @@ class PackagesSearchParams:
             search_query.append({'$and': append_list})
         return concat_params(search_query, 'and')
 
-    # FIXME: I'm broken
-    def screen_url(param):
-        """Search by screenshot URL.
-
-        Logical AND is used to concatenate params.
-        """
-
-        return {'screenshots.url': {'$all': [str(x) for x in param]}}
+    # def screen_url(param):
+    #     """Search by screenshot URL.
+    #
+    #     Logical AND is used to concatenate params.
+    #     """
+    #
+    #     return {'screenshots': {undot(x): {'$exists': True} for x in param}}
 
     # FIXME: I'm broken
     @_only_one_param
