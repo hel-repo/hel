@@ -17,6 +17,7 @@ deploy:
   domain: roottree
   on:
     repo: hel-repo/hel
+    branch: master
 notifications:
   irc:
     channels:
