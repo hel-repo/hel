@@ -569,13 +569,13 @@ class PkgSearchTests(unittest.TestCase):
             (['dpackage-2'], [self.pkg1],)
         ]
 
-    @param('screen_url')
-    def test_pkg_search_screen_url(self):
-        return [
-            (['http://img.example.com/img11',
-              'http://img.example.com/img31'], [],),
-            (['http://img.example.com/img21',
-              'http://img.example.com/img23'], [self.pkg2],),
-            (['http://img.example.com/img42'], [],),
-            (['http://img.example.com/img32'], [self.pkg3],)
-        ]
+    # @param('screen_url')
+    # def test_pkg_search_screen_url(self):
+    #     return [
+    #         (['http://img.example.com/img11',
+    #           'http://img.example.com/img31'], [],),
+    #         (['http://img.example.com/img21',
+    #           'http://img.example.com/img23'], [self.pkg2],),
+    #         (['http://img.example.com/img42'], [],),
+    #         (['http://img.example.com/img32'], [self.pkg3],)
+    #     ]

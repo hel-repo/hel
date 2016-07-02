@@ -1,7 +1,9 @@
 from pyramid.httpexceptions import HTTPBadRequest
 
+from hel.utils import parse_search_phrase
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
+from hel.utils.version import latest_version
 
 
 def _only_one_param(func):
@@ -33,33 +35,81 @@ class PackagesSearchParams:
 
     @_only_one_param
     def name(param):
-        """Search by name regex"""
+        """Search by name"""
 
-        return {'name': {'$regex': '.*' + str(param) + '.*'}}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                if phrase not in pkg['name']:
+                    success = False
+                    break
+            return success
+
+        return search
 
     @_only_one_param
     def description(param):
-        """Search by description regex"""
+        """Search by description"""
 
-        return {'description': {'$regex': '.*' + str(param) + '.*'}}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                if phrase not in pkg['description']:
+                    success = False
+                    break
+            return success
+
+        return search
 
     @_only_one_param
     def short_description(param):
-        return {'short_description': {'$regex': '.*' + str(param) + '.*'}}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                if phrase not in pkg['short_description']:
+                    success = False
+                    break
+            return success
+
+        return search
 
     @_only_one_param
     def authors(param):
         """Search by author name regex"""
 
-        return {'authors': {'$regex': '.*' + str(param) + '.*'}}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for author in pkg['authors']:
+                for phrase in phrases:
+                    if phrase not in author:
+                        success = False
+                        break
+                if not success:
+                    break
+            return success
+
+        return search
 
     def license(param):
         """Search by license.
 
-        Logical OR is used to concatenate params.
+        Logical AND is used to concatenate params.
         """
 
-        return {'license': {'$in': [str(x) for x in param]}}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                if phrase not in pkg['license']:
+                    success = False
+                    break
+            return success
+
+        return search
 
     def tags(param):
         """Search by tag.
@@ -67,39 +117,79 @@ class PackagesSearchParams:
         Logical AND is used to concatenate params.
         """
 
-        return {'tags': concat_params([str(x) for x in param], 'all')}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for tag in pkg['tags']:
+                for phrase in phrases:
+                    if phrase not in tag:
+                        success = False
+                        break
+                if not success:
+                    break
+            return success
 
-    # FIXME: I'm broken
+        return search
+
     def file_url(param):
         """Search by file URL.
 
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.url': concat_params([str(x) for x in param],
-                                                    'all')}
+        def search(pkg):
+            success = True
+            ver = pkg['versions'][str(latest_version(pkg))]
+            for url in param:
+                if url not in ver['files']:
+                    success = False
+                    break
+            return success
 
-    # FIXME: I'm broken
+        return search
+
     def file_dir(param):
         """Search by directory.
 
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.dir': concat_params([str(x) for x in param],
-                                                    'all')}
+        def search(pkg):
+            success = True
+            ver = pkg['versions'][str(latest_version(pkg))]
+            for d in param:
+                success_loop = False
+                for k, v in ver['files'].items():
+                    if v['dir'] == d:
+                        success_loop = True
+                        break
+                if not success_loop:
+                    success = False
+                    break
+            return success
 
-    # FIXME: I'm broken
+        return search
+
     def file_name(param):
         """Search by file name.
 
         Logical AND is used to concatenate params.
         """
 
-        return {'versions.files.name': concat_params([str(x) for x in param],
-                                                     'all')}
+        def search(pkg):
+            success = True
+            ver = pkg['versions'][str(latest_version(pkg))]
+            for name in param:
+                success_loop = False
+                for k, v in ver['files'].items():
+                    if v['name'] == name:
+                        success_loop = True
+                        break
+                if not success_loop:
+                    success = False
+                    break
+            return success
 
-    # FIXME: I'm broken
     def dependency(param):
         """Returns packages depending on specific packages.
 
@@ -107,40 +197,64 @@ class PackagesSearchParams:
         Logical AND is used to concatenate params.
         """
 
-        search_query = []
-        for dep in param:
-            dep_full = str(dep).split(':')
-            if len(dep_full) == 2:
-                dep_full.append(None)
-            elif len(dep_full) == 1:
-                dep_full.append(None)
-                dep_full.append(None)
+        def search(pkg):
+            success = True
+            ver = pkg['versions'][str(latest_version(pkg))]
+            for dep_info in param:
+                dep = dep_info.split(':')
+                name = dep[0]
+                if len(dep) > 2:
+                    dep_type = dep[2]
+                if len(dep) > 1:
+                    version = dep[1]
+                if name not in ver['depends']:
+                    success = False
+                else:
+                    if (len(dep) > 1 and
+                            ver['depends'][name]['type'] != dep_type):
+                        success = False
+                    else:
+                        if (len(dep) > 2 and
+                                ver['depends'][name]
+                                ['version'] != version):
+                            success = False
+            return success
 
-            append_list = [{'versions.depends.name': dep_full[0]}]
-            if dep_full[1]:
-                append_list.append({'versions.depends.version': dep_full[1]})
-            if dep_full[2]:
-                append_list.append({'versions.depends.type': dep_full[2]})
+        return search
 
-            search_query.append({'$and': append_list})
-        return concat_params(search_query, 'and')
+    def screen_url(param):
+        """Search by screenshot URL.
 
-    # def screen_url(param):
-    #     """Search by screenshot URL.
-    #
-    #     Logical AND is used to concatenate params.
-    #     """
-    #
-    #     return {'screenshots': {undot(x): {'$exists': True} for x in param}}
+        Logical AND is used to concatenate params.
+        """
+
+        def search(pkg):
+            success = True
+            for url in param:
+                if url not in pkg['screenshots']:
+                    success = False
+            return success
+
+        return search
 
     # FIXME: I'm broken
     @_only_one_param
     def screen_desc(param):
         """Search by screenshot description regex"""
 
-        return {'screenshots.description': {
-            '$regex': '.*' + str(param) + '.*'
-        }}
+        def search(pkg):
+            success = True
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                success_loop = False
+                for k, v in pkg['screenshots'].items():
+                    if phrase in v:
+                        success_loop = True
+                        break
+                if not success_loop:
+                    success = False
+                    break
+            return success
 
 
 class PackagesSearchQuery:
