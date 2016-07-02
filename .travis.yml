@@ -1,10 +1,32 @@
 language: python
 python:
-  - "3.5"
+- '3.5'
 install:
-  - pip install -e .
-  - pip install -e '.[testing]'
+- pip install -e .
+- pip install -e '.[testing]'
 services: mongodb
 env:
-  - HEL_TESTING_MONGODB_ADDR='mongodb://localhost:27017'
+- HEL_TESTING_MONGODB_ADDR='mongodb://localhost:27017'
 script: py.test
+deploy:
+  provider: openshift
+  user: murky.owl@gmail.com
+  password:
+    secure: QjEdjC8OlpZ6MaaoRWZXoeTgQyzRdX9ZmAK5cX9jaKCIpICmeZaT0PhJ+LHwq4ZEqevguqMeq7j/FnYnJLmfMXUsofe0XI8iSJ6/nMpjG+D1XhzZLB4JxWbaak8r+KMi+8k8OfVjdlMR7jXg27HQRwYSXcMZp54P+KBuuEYrTipOiHWl/oBAjEBc9Ps8N21AyLcvtmCZV6fEh5dPzEVh6w37ZFXtGjcOC9UMULWvJjazVovxbWBGAjlEH8bjlEtY+lYhmEybAUIB9Dx/jMM+2aIQAIoa3FUsYAxMtR8DjLwaOY9qxP6mVCE6lYFLk2c28+NtejdP60Y2vD5naV2WCxd1P5307CFU7OhyGwABK3DmkTwKusK09UqtVEUVLEn7jUQlUXJ9NoFLjivg37GGzCZPyE3VQWqyC5OLWxCnnhvq6bC5R+PW8R/mEmAWWnENLpYpju4PvQj88J/h7Eqjc3Jvtai1TJoaxZphGA/FVPRezSm1LionVzphZ6ipGjy1hDtl/lgHWXDLi2vbUYlTNU8Qc4SeugQbzg/VxxcY8SZOLue6gyuHUG/rKmCzOfFrFULe3GovmttUvXwgKoTCbioiAe8UVbyE+eewPHbX91KMV9R30jmdxMRDTD380O7ua0ZGP5FzTSXYY47MdG8z03qoRcyBWenfFEeGXIg0p5A=
+  app: hel
+  domain: roottree
+  on:
+    repo: hel-repo/hel
+    branch: master
+notifications:
+  irc:
+    channels:
+      - "irc.esper.net#cc.ru"
+    use_notice: true
+    template:
+      - "New build on %{repository_slug}!"
+      - "%{repository_name}#%{build_number} [%{branch}] %{message}"
+      - "[%{commit}] %{author}: %{commit_message}"
+      - "Changes: %{compare_url}"
+      - "Build details: %{build_url}"
+
