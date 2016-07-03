@@ -14,7 +14,7 @@ from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelUser
 from hel.utils.query import (
-    PackagesSearchQuery,
+    PackagesSearcher,
     check,
     check_list_of_strs,
     replace_chars_in_keys
@@ -284,10 +284,11 @@ def list_packages(context, request):
         offset = int(offset)
     except ValueError:
         offset = 0
-    search_query = PackagesSearchQuery(params)
-    query = search_query()
-    retrieved = context.retrieve(query)
-    return retrieved[offset:offset+length]
+    searcher = PackagesSearcher(params)
+    searcher()
+    packages = context.retrieve({})
+    found = searcher.search(packages)
+    return found[offset:offset+length]
 
 
 # User controller

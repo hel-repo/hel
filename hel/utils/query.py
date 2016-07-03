@@ -29,9 +29,7 @@ def undot(s):
     return str_repl(s, '.', Constants.key_replace_char)
 
 
-# FIXME: fix the search after changing package model
 class PackagesSearchParams:
-    """Provides methods for converting GET-params to MongoDB query"""
 
     @_only_one_param
     def name(param):
@@ -78,7 +76,7 @@ class PackagesSearchParams:
 
     @_only_one_param
     def authors(param):
-        """Search by author name regex"""
+        """Search by author name"""
 
         def search(pkg):
             success = True
@@ -141,6 +139,7 @@ class PackagesSearchParams:
             success = True
             ver = pkg['versions'][str(latest_version(pkg))]
             for url in param:
+                url = undot(url)
                 if url not in ver['files']:
                     success = False
                     break
@@ -231,16 +230,16 @@ class PackagesSearchParams:
         def search(pkg):
             success = True
             for url in param:
+                url = undot(url)
                 if url not in pkg['screenshots']:
                     success = False
             return success
 
         return search
 
-    # FIXME: I'm broken
     @_only_one_param
     def screen_desc(param):
-        """Search by screenshot description regex"""
+        """Search by screenshot description"""
 
         def search(pkg):
             success = True
@@ -257,13 +256,13 @@ class PackagesSearchParams:
             return success
 
 
-class PackagesSearchQuery:
+class PackagesSearcher:
 
     def __init__(self, params):
         self.params = params
 
     def __call__(self):
-        query = {}
+        searchers = []
         for param_name, param in self.params.items():
             if hasattr(PackagesSearchParams, param_name):
                 param_method = getattr(PackagesSearchParams, param_name)
@@ -278,18 +277,25 @@ class PackagesSearchQuery:
                                 1, len(param),))
                     else:
                         param = param[0]
-                search_doc = param_method(param)
-                for k, v in search_doc.items():
-                    query[k] = v
+                search = param_method(param)
+                searchers.append(search)
             else:
                 raise HTTPBadRequest(
                     detail=Messages.bad_search_param % param_name)
-        self.query = query
-        return query
+        self.searchers = searchers
+        return searchers
 
-    def __str__(self):
-        self.__call__()
-        return str(self.query)
+    def search(self, packages):
+        result = []
+        for pkg in packages:
+            success = True
+            for searcher in self.searchers:
+                if not searcher(pkg):
+                    success = False
+                    break
+            if success:
+                result.append(pkg)
+        return result
 
 
 def check(value, expected_type, message=None):
