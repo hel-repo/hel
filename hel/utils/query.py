@@ -81,31 +81,25 @@ class PackagesSearchParams:
         def search(pkg):
             success = True
             phrases = parse_search_phrase(param)
-            for author in pkg['authors']:
-                for phrase in phrases:
-                    if phrase not in author:
-                        success = False
+            for phrase in phrases:
+                success_loop = False
+                for author in pkg['authors']:
+                    if phrase in author:
+                        success_loop = True
                         break
-                if not success:
+                if not success_loop:
+                    success = False
                     break
             return success
 
         return search
 
+    @_only_one_param
     def license(param):
-        """Search by license.
-
-        Logical AND is used to concatenate params.
-        """
+        """Search by license"""
 
         def search(pkg):
-            success = True
-            phrases = parse_search_phrase(param)
-            for phrase in phrases:
-                if phrase not in pkg['license']:
-                    success = False
-                    break
-            return success
+            return param in pkg['license']
 
         return search
 
@@ -117,13 +111,14 @@ class PackagesSearchParams:
 
         def search(pkg):
             success = True
-            phrases = parse_search_phrase(param)
-            for tag in pkg['tags']:
-                for phrase in phrases:
-                    if phrase not in tag:
-                        success = False
+            for exp_tag in param:
+                success_loop = False
+                for tag in pkg['tags']:
+                    if exp_tag == tag:
+                        success_loop = True
                         break
-                if not success:
+                if not success_loop:
+                    success = False
                     break
             return success
 
@@ -139,7 +134,6 @@ class PackagesSearchParams:
             success = True
             ver = pkg['versions'][str(latest_version(pkg))]
             for url in param:
-                url = undot(url)
                 if url not in ver['files']:
                     success = False
                     break
@@ -178,7 +172,9 @@ class PackagesSearchParams:
         def search(pkg):
             success = True
             ver = pkg['versions'][str(latest_version(pkg))]
+            print([x['name'] for y, x in ver['files'].items()])
             for name in param:
+                print(name)
                 success_loop = False
                 for k, v in ver['files'].items():
                     if v['name'] == name:
@@ -188,6 +184,8 @@ class PackagesSearchParams:
                     success = False
                     break
             return success
+
+        return search
 
     def dependency(param):
         """Returns packages depending on specific packages.
@@ -209,13 +207,14 @@ class PackagesSearchParams:
                 if name not in ver['depends']:
                     success = False
                 else:
-                    if (len(dep) > 1 and
-                            ver['depends'][name]['type'] != dep_type):
+                    if (len(dep) > 2 and
+                            ver['depends'][name]
+                            ['version'] != version):
                         success = False
                     else:
                         if (len(dep) > 2 and
                                 ver['depends'][name]
-                                ['version'] != version):
+                                ['type'] != dep_type):
                             success = False
             return success
 
@@ -230,7 +229,6 @@ class PackagesSearchParams:
         def search(pkg):
             success = True
             for url in param:
-                url = undot(url)
                 if url not in pkg['screenshots']:
                     success = False
             return success
@@ -254,6 +252,8 @@ class PackagesSearchParams:
                     success = False
                     break
             return success
+
+        return search
 
 
 class PackagesSearcher:
@@ -285,7 +285,12 @@ class PackagesSearcher:
         self.searchers = searchers
         return searchers
 
-    def search(self, packages):
+    def search(self, pkgs):
+        packages = []
+        for pkg in pkgs:
+            packages.append(
+                replace_chars_in_keys(
+                    pkg, Constants.key_replace_char, '.'))
         result = []
         for pkg in packages:
             success = True

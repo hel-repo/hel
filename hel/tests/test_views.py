@@ -6,7 +6,7 @@ from pyramid.httpexceptions import HTTPBadRequest
 
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage
-from hel.utils.query import PackagesSearchQuery
+from hel.utils.query import PackagesSearcher
 
 
 class ViewTests(unittest.TestCase):
@@ -45,7 +45,7 @@ def one_value_param(name):
             # 0 values: should fail
             with self.subTest(test='0 values'):
                 try:
-                    PackagesSearchQuery({
+                    PackagesSearcher({
                         name: []
                     })()
                 except HTTPBadRequest as e:
@@ -61,7 +61,7 @@ def one_value_param(name):
             for i in range(2, 4):
                 with self.subTest(test='%s values' % i):
                     try:
-                        PackagesSearchQuery({
+                        PackagesSearcher({
                             name: ['hel'] * i
                         })()
                     except HTTPBadRequest as e:
@@ -76,12 +76,12 @@ def one_value_param(name):
             for test_case in tests:
                 with self.subTest(test=test_case):
                     value, expected = test_case
-                    search_query = PackagesSearchQuery({
+                    searcher = PackagesSearcher({
                         name: [value]
                     })
-                    query = search_query()
-                    search_result = [x for x in self.db
-                                     ['packages'].find(query)]
+                    searcher()
+                    packages = [x for x in self.db['packages'].find({})]
+                    search_result = searcher.search(packages)
                     for num, doc in enumerate(search_result):
                         if '_id' in search_result[num]:
                             del search_result[num]['_id']
@@ -103,7 +103,7 @@ def param(name):
             # Zero values: should fail
             with self.subTest(test='0 values'):
                 try:
-                    PackagesSearchQuery({
+                    PackagesSearcher({
                         name: []
                     })()
                 except HTTPBadRequest as e:
@@ -118,12 +118,12 @@ def param(name):
             for test_case in tests:
                 with self.subTest(test=test_case):
                     values, expected = test_case
-                    search_query = PackagesSearchQuery({
+                    searcher = PackagesSearcher({
                         name: values
                     })
-                    query = search_query()
-                    search_result = [x for x in self.db
-                                     ['packages'].find(query)]
+                    searcher()
+                    packages = [x for x in self.db['packages'].find({})]
+                    search_result = searcher.search(packages)
                     for num, doc in enumerate(search_result):
                         if '_id' in search_result[num]:
                             del search_result[num]['_id']
@@ -136,7 +136,7 @@ def param(name):
 
 class PkgSearchTests(unittest.TestCase):
 
-    pkg1 = ModelPackage(
+    pkg1m = ModelPackage(
         name='package-1',
         description='My first test package.',
         short_description='1 package.',
@@ -241,9 +241,9 @@ class PkgSearchTests(unittest.TestCase):
             'http://img.example.com/img12': 'test-1-img-2',
             'http://img.example.com/img13': 'test-1-img-3'
         }
-    ).pkg
+    )
 
-    pkg2 = ModelPackage(
+    pkg2m = ModelPackage(
         name='package-2',
         description='My second test package.',
         short_description='2 package.',
@@ -348,9 +348,9 @@ class PkgSearchTests(unittest.TestCase):
             'http://img.example.com/img22': 'test-2-img-2',
             'http://img.example.com/img23': 'test-2-img-3'
         }
-    ).pkg
+    )
 
-    pkg3 = ModelPackage(
+    pkg3m = ModelPackage(
         name='package-3',
         description='My third test package.',
         short_description='3 package.',
@@ -455,7 +455,7 @@ class PkgSearchTests(unittest.TestCase):
             'http://img.example.com/img32': 'test-3-img-2',
             'http://img.example.com/img33': 'test-3-img-3'
         }
-    ).pkg
+    )
 
     def setUp(self):
         from pymongo import MongoClient
@@ -466,12 +466,12 @@ class PkgSearchTests(unittest.TestCase):
         self.client = MongoClient(url)
         self.db = self.client.hel
         self.db['packages'].delete_many({})
-        self.db['packages'].insert_one(self.pkg1)
-        del self.pkg1['_id']
-        self.db['packages'].insert_one(self.pkg2)
-        del self.pkg2['_id']
-        self.db['packages'].insert_one(self.pkg3)
-        del self.pkg3['_id']
+        self.pkg1 = self.pkg1m.data
+        self.pkg2 = self.pkg2m.data
+        self.pkg3 = self.pkg3m.data
+        self.db['packages'].insert_one(self.pkg1m.pkg)
+        self.db['packages'].insert_one(self.pkg2m.pkg)
+        self.db['packages'].insert_one(self.pkg3m.pkg)
 
         self.config = testing.setUp()
 
@@ -484,17 +484,19 @@ class PkgSearchTests(unittest.TestCase):
     def test_pkg_search_name(self):
         return [
             ('package', [self.pkg1, self.pkg2, self.pkg3],),
-            ('1', [self.pkg1],)
+            ('1', [self.pkg1],),
+            ('p "ack" g e 2', [self.pkg2])
         ]
 
     @one_value_param('description')
     def test_pkg_search_description(self):
         return [
-            ('[Mm]y', [self.pkg1, self.pkg2, self.pkg3],),
+            ('y', [self.pkg1, self.pkg2, self.pkg3],),
             ('first', [self.pkg1],),
             ('second', [self.pkg2],),
             ('third', [self.pkg3],),
-            ('test', [self.pkg1, self.pkg2, self.pkg3],)
+            ('test', [self.pkg1, self.pkg2, self.pkg3],),
+            ('t "es" t', [self.pkg1, self.pkg2, self.pkg3],)
         ]
 
     @one_value_param('short_description')
@@ -508,7 +510,7 @@ class PkgSearchTests(unittest.TestCase):
     @one_value_param('authors')
     def test_pkg_search_author(self):
         return [
-            ('[Tt]ester', [self.pkg1, self.pkg2, self.pkg3],),
+            ('Tester', [self.pkg1, self.pkg2, self.pkg3],),
             ('Kjers', [self.pkg2],)
         ]
 
@@ -516,14 +518,16 @@ class PkgSearchTests(unittest.TestCase):
     def test_pkg_search_screen_desc(self):
         return [
             ('3', [self.pkg1, self.pkg2, self.pkg3],),
-            ('test-3', [self.pkg3],)
+            ('test-3', [self.pkg3],),
+            ('te s "t-1"', [self.pkg1],)
         ]
 
     @param('license')
     def test_pkg_search_license(self):
         return [
             (['mylicense-1'], [self.pkg1],),
-            (['mylicense-2', 'mylicense-3'], [self.pkg2, self.pkg3],)
+            (['mylicense-4'], [],),
+            (['mylicense-3'], [self.pkg3],)
         ]
 
     @param('tags')
@@ -537,12 +541,14 @@ class PkgSearchTests(unittest.TestCase):
     @param('file_url')
     def test_pkg_search_file_url(self):
         return [
-            (['http://example.com/file11'], [self.pkg1],),
-            (['http://example.com/file31'], [self.pkg3],),
-            (['http://example.com/file22',
-              'http://example.com/file23'], [self.pkg2],),
+            (['http://example.com/file11'], [],),
+            (['http://example.com/file19'], [self.pkg1],),
+            (['http://example.com/file39'], [self.pkg3],),
+            (['http://example.com/file28',
+              'http://example.com/file29'], [self.pkg2],),
             (['http://example.com/file12',
-              'http://example.com/file32'], [],)
+              'http://example.com/file32'], [],),
+            (['http://example.com/file29'], [self.pkg2],)
         ]
 
     @param('file_dir')
@@ -557,8 +563,12 @@ class PkgSearchTests(unittest.TestCase):
     def test_pkg_search_file_name(self):
         return [
             (['test-3-file-1', 'test-1-file-3'], [],),
-            (['test-2-file-2', 'test-2-file-3'], [self.pkg2],),
-            (['test-1-file-1', 'test-1-file-2'], [self.pkg1],),
+            (['test-2-file-2', 'test-2-file-3'], [],),
+            (['test-1-file-1', 'test-1-file-2'], [],),
+            (['test-3-file-7', 'test-2-file-9'], [],),
+            (['test-2-file-8', 'test-2-file-7'], [self.pkg2],),
+            (['test-1-file-7', 'test-1-file-8'], [self.pkg1],),
+            (['test-3-file-2', 'test-3-file-9'], [],)
         ]
 
     @param('dependency')
@@ -569,13 +579,13 @@ class PkgSearchTests(unittest.TestCase):
             (['dpackage-2'], [self.pkg1],)
         ]
 
-    # @param('screen_url')
-    # def test_pkg_search_screen_url(self):
-    #     return [
-    #         (['http://img.example.com/img11',
-    #           'http://img.example.com/img31'], [],),
-    #         (['http://img.example.com/img21',
-    #           'http://img.example.com/img23'], [self.pkg2],),
-    #         (['http://img.example.com/img42'], [],),
-    #         (['http://img.example.com/img32'], [self.pkg3],)
-    #     ]
+    @param('screen_url')
+    def test_pkg_search_screen_url(self):
+        return [
+            (['http://img.example.com/img11',
+              'http://img.example.com/img31'], [],),
+            (['http://img.example.com/img21',
+              'http://img.example.com/img23'], [self.pkg2],),
+            (['http://img.example.com/img42'], [],),
+            (['http://img.example.com/img32'], [self.pkg3],)
+        ]
