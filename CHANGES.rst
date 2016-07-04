@@ -1,6 +1,9 @@
 0.3.0
 -----
-- A wrapper around package creating.
+- Wrappers for the remaining views.
+  - A wrapper around package creating.
+  - A User:GET wrapper.
+  - A User:POST wrapper.
 
 0.2.0
 -----

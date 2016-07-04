@@ -360,7 +360,11 @@ def get_user(context, request):
     if r is None:
         raise HTTPNotFound()
     else:
-        return r
+        data = {
+            'nickname': r['nickname'],
+            'groups': r['groups']
+        }
+        return data
 
 
 @view_config(request_method='DELETE',
@@ -380,7 +384,11 @@ def delete_user(context, request):
              renderer='json',
              permission='user_create')
 def create_user(context, request):
-    context.create(request.json_body)
+    try:
+        user = ModelUser(**request.json_body)
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_user)
+    context.create(user.data)
 
     return Response(
         status='201 Created',

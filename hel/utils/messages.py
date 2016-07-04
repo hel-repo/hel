@@ -17,3 +17,4 @@ class Messages:
     bad_package = 'The package data you provided contained an error.'
     pkg_name_conflict = 'The name is already used by other package.'
     pkg_bad_name = 'The name contains illegal characters.'
+    bad_user = 'This user data you provided contained an error.'
