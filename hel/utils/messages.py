@@ -13,3 +13,4 @@ class Messages:
     too_many_values = 'Too many values (%s expected, got %s).'
     no_values = 'No values given for %s.'
     bad_search_param = 'No such search param: %s.'
+    type_mismatch = 'Wrong value for param "%s" given: expected %s!'

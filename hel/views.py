@@ -148,23 +148,36 @@ def update_package(context, request):
     query = {}
     for k, v in request.json_body.items():
         if k in ['name', 'description', 'owner', 'license']:
-            query[k] = check(v, str)  # TODO: message
+            query[k] = check(
+                v, str,
+                Messages.type_mismatch % (k, 'str',))
         elif k == 'short_description':
-            query[k] = check(v, str)[:120]  # TODO: message
+            query[k] = check(
+                v, str,
+                Messages.type_mismatch % (k, 'str',))[:120]
         elif k in ['authors', 'tags']:
-            query[k] = check_list_of_strs(v)  # TODO: message
+            query[k] = check_list_of_strs(
+                v, Messages.type_mismatch % (k, 'list of strs',))
         elif k == 'versions':
-            check(v, dict)  # TODO: message
+            check(
+                v, dict,
+                Messages.type_mismatch % (k, 'dict',))
             for num, ver in v.items():
-                check(num, str)  # TODO: message
+                check(
+                    num, str,
+                    Messages.type_mismatch % ('version', 'str',))
                 if ver is None:
                     query[k] = query[k] or {}
                     query[k]['versions'] = query[k]['versions'] or {}
                     query[k]['versions'][num] = None
                 else:
-                    check(ver, dict)  # TODO: message
+                    check(
+                        ver, dict,
+                        Messages.type_mismatch % ('version_info', 'dict',))
                     if 'files' in ver:
-                        check(ver['files'], dict)  # TODO: message
+                        check(
+                            ver['files'], dict,
+                            Messages.type_mismatch % ('files', 'dict',))
                         for url, file_info in ver['files'].items():
                             if file_info is None:
                                 query[k] = query[k] or {}
@@ -174,19 +187,28 @@ def update_package(context, request):
                                     query[k]['versions'][num] or {})
                                 query[k]['versions'][num]['files'][url] = None
                             else:
-                                check(file_info, dict)
-                                check(url, str)  # TODO: message
+                                check(
+                                    file_info, dict,
+                                    Messages.type_mismatch % (
+                                        'file_info', 'dict',))
+                                check(
+                                    url, str,
+                                    Messages.type_mismatch % ('url', 'str',))
                                 query[k] = query[k] or {}
                                 query[k]['versions'] = (
                                     query[k]['versions'] or {})
                                 query[k]['versions'][num] = (
                                     query[k]['versions'][num] or {})
                                 if ('dir' in file_info and
-                                        # TODO: message
-                                        check(file_info['dir'], str) or
+                                        check(
+                                            file_info['dir'], str,
+                                            Messages.type_mismatch % (
+                                                'file_dir', 'str',)) or
                                         'name' in file_info and
-                                        # TODO: message
-                                        check(file_info['name'], str)):
+                                        check(
+                                            file_info['name'], str,
+                                            Messages.type_mismatch % (
+                                                k, 'str',))):
                                     (query[k]['versions'][num]['files']
                                      [url]) = {}
                                 if 'dir' in file_info:
@@ -197,7 +219,9 @@ def update_package(context, request):
                                      [url]['dir']) = file_info['name']
 
                     if 'depends' in ver:
-                        check(ver['depends'], dict)
+                        check(
+                            ver['depends'], dict,
+                            Messages.type_mismatch % ('depends', 'dict',))
                         for dep_name, dep_info in ver['depends'].items():
                             if dep_info is None:
                                 query[k] = query[k] or {}
@@ -206,11 +230,15 @@ def update_package(context, request):
                                 query[k]['versions'][num] = (
                                     query[k]['versions'][num] or {})
                                 if ('version' in dep_info and
-                                        # TODO: message
-                                        check(dep_info['version'], str) or
+                                        check(
+                                            dep_info['version'], str,
+                                            Messages.type_mismatch % (
+                                                'dep_version', 'str',)) or
                                         'type' in dep_info and
-                                        # TODO: message
-                                        check(dep_info['type'], str)):
+                                        check(
+                                            dep_info['type'], str,
+                                            Messages.type_mismatch % (
+                                                'dep_type', 'str',))):
                                     query[k]['versions'][num]['depends'] = {}
                                 if 'version' in dep_info:
                                     (query[k]['versions'][num]['depends']
@@ -220,10 +248,14 @@ def update_package(context, request):
                                     (query[k]['versions'][num]['depends']
                                      [dep_name]['type']) = dep_info['type']
         elif k == 'screenshots':
-            check(v, dict)
+            check(v, dict, Messages.type_mismatch % (k, 'dict',))
             for url, desc in v:
-                check(url, str)  # TODO: message
-                if desc is None or check(desc, str):  # TODO: message
+                check(
+                    url, str,
+                    Messages.type_mismatch % ('screenshot_key', 'str',))
+                if desc is None or check(
+                        desc, str,
+                        Messages.type_mismatch % ('screenshot_desc', 'str',)):
                     query[k][url] = desc
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
@@ -263,7 +295,9 @@ def delete_package(context, request):
              renderer='json',
              permission='pkg_create')
 def create_package(context, request):
-    context.create(request.json_body)
+    data = replace_chars_in_keys(request.json_body, '.',
+                                 Constants.key_replace_char)
+    context.create(data)
 
     return Response(
         status='201 Created',
