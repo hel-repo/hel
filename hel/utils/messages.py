@@ -14,3 +14,6 @@ class Messages:
     no_values = 'No values given for %s.'
     bad_search_param = 'No such search param: %s.'
     type_mismatch = 'Wrong value for param "%s" given: expected %s!'
+    bad_package = 'The package data you provided contained an error.'
+    pkg_name_conflict = 'The name is already used by other package.'
+    pkg_bad_name = 'The name contains illegal characters.'

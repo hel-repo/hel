@@ -1,5 +1,7 @@
 import json
 
+import semantic_version as semver
+
 from hel.utils.query import replace_chars_in_keys
 from hel.utils.constants import Constants
 
@@ -38,7 +40,7 @@ class ModelPackage:
                             'version': str(dep_info['version']),
                             'type': str(dep_info['type'])
                         }
-                    v[str(ver)] = {
+                    v[str(semver.Version.coerce(str(ver)))] = {
                         'files': files,
                         'depends': dependencies
                     }

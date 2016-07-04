@@ -1,3 +1,7 @@
+0.3.0
+-----
+- A wrapper around package creating.
+
 0.2.0
 -----
 - Short description search.

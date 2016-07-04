@@ -3,16 +3,21 @@ import hashlib
 import logging
 import os
 
-from pyramid.httpexceptions import HTTPNotFound, HTTPFound
+from pyramid.httpexceptions import (
+    HTTPBadRequest,
+    HTTPFound,
+    HTTPNotFound,
+    HTTPConflict
+)
 from pyramid.request import Request
 from pyramid.response import Response
-from pyramid.security import remember, forget
+from pyramid.security import forget, remember
 from pyramid.view import view_config
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
-from hel.utils.models import ModelUser
+from hel.utils.models import ModelPackage, ModelUser
 from hel.utils.query import (
     PackagesSearcher,
     check,
@@ -295,9 +300,16 @@ def delete_package(context, request):
              renderer='json',
              permission='pkg_create')
 def create_package(context, request):
-    data = replace_chars_in_keys(request.json_body, '.',
-                                 Constants.key_replace_char)
-    context.create(data)
+    try:
+        pkg = ModelPackage(**request.json_body)
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_package)
+    if len([x for x in (request.db['packages']
+                        .find({'name': pkg.data['name']}))]) > 0:
+        raise HTTPConflict(detail=Messages.pkg_name_conflict)
+    if not Constants.name_pattern.match(pkg.data['name']):
+        raise HTTPBadRequest(detail=Messages.pkg_bad_name)
+    context.create(pkg.pkg)
 
     return Response(
         status='201 Created',
