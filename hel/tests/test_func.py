@@ -51,6 +51,16 @@ class FunctionalTests(unittest.TestCase):
     def test_unexisting_page(self):
         self.test_app.get('/thispagedoesnotexist', status=404)
 
+    def test_bad_log_in(self):
+        res = self.test_app.post('/', {
+                'password': 'hi',
+                'log-in': True
+            }, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.bad_request)
+
     def test_failed_log_in(self):
         res = self.test_app.post('/', {
                 'password': 'totally-random-passwd',
@@ -58,6 +68,39 @@ class FunctionalTests(unittest.TestCase):
                 'log-in': True
             }, status=200)
         self.assertIsNone(res.html.find(id='log-out'))
+
+    def test_failed_log_in_empty_nick(self):
+        res = self.test_app.post('/', {
+                'password': 'hi',
+                'nickname': '',
+                'log-in': True
+            }, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.empty_nickname)
+
+    def test_failed_log_in_empty_pass(self):
+        res = self.test_app.post('/', {
+                'password': '',
+                'nickname': 'test',
+                'log-in': True
+            }, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.empty_password)
+
+    def test_bad_reg(self):
+        res = self.test_app.post('/', {
+                'email': '',
+                'nickname': '',
+                'passwd-confirm': '',
+                'register': True
+            }, status=200)
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.bad_request)
 
     def test_failed_reg_empty_nick(self):
         res = self.test_app.post('/', {
@@ -95,14 +138,12 @@ class FunctionalTests(unittest.TestCase):
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.empty_password)
 
-    def test_failed_reg_passwd_match(self):
-        res = self.test_app.post('/', {
-                'email': self.user['email'],
-                'nickname': self.user['nickname'],
-                'password': self.user['password'],
-                'passwd-confirm': 'Hello.',
-                'register': True
-            }, status=200)
+    def test_failed_reg_nick_use(self):
+        data = copy.copy(self.user)
+        data['register'] = True
+        data['passwd-confirm'] = 'hi'
+        res = self.test_app.post('/', data, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.password_mismatch)
@@ -130,37 +171,15 @@ class FunctionalAuthTests(unittest.TestCase):
     setUp = FunctionalTests.setUp
     tearDown = FunctionalTests.tearDown
 
-    def test_log_in_success(self):
-        global auth_headers
+    def test_failed_log_in_pass(self):
         data = copy.copy(self.user)
         data['log-in'] = True
-        res1 = self.test_app.post('/', data, status=302)
-        headers = res1.headers
-        auth_headers = ResponseHeaders()
-        for k, v in headers.items():
-            if k.lower() == 'set-cookie':
-                auth_headers.add('Cookie', v)
-            elif k.lower() not in ['content-type', 'content-length']:
-                auth_headers.add(k, v)
-        res = self.test_app.get('/', headers=auth_headers, status=200)
-        self.assertIsNone(res.html.find(id='login-message'))
-        self.assertIsNone(res.html.find(id='action-log-in'))
-        self.assertIsNone(res.html.find(id='action-register'))
-        self.assertIsNone(res.html.find(id='log-in-form'))
-        self.assertIsNone(res.html.find(id='register-form'))
-        logout = res.html.find(id='log-out')
-        self.assertIsNotNone(logout)
-        self.assertEqual(logout.form.span.span.string, '@' +
-                         self.user['nickname'])
-
-    def test_log_out(self):
-        global auth_headers
-        res1 = self.test_app.post('/', {
-                'log-out': True
-            }, headers=auth_headers, status=302)
-        auth_headers = res1.headers
-        res = self.test_app.get('/', headers=auth_headers, status=200)
-        self.assertIsNotNone(res.html.find(id='login-message'))
+        data['password'] = 'blah-blah-blah'
+        res = self.test_app.post('/', data, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.failed_login)
 
 
 class FunctionTestsWithAuth(unittest.TestCase):
@@ -168,7 +187,23 @@ class FunctionTestsWithAuth(unittest.TestCase):
     user = FunctionalAuthTests.user
 
     def setUp(self):
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['users'].delete_many({})
+        client.close()
         FunctionalAuthTests.setUp(self)
+        data = copy.copy(self.user)
+        data['register'] = True
+        data['passwd-confirm'] = data['password']
+        res = self.test_app.post('/', data, status=200)
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.account_created_success)
+        client = MongoClient(mongodb_url)
+        users = [x for x in client.hel['users'].find()]
+        client.close()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0]['nickname'], data['nickname'])
         data = copy.copy(self.user)
         data['log-in'] = True
         res = self.test_app.post('/', data, status=302)
@@ -180,10 +215,87 @@ class FunctionTestsWithAuth(unittest.TestCase):
             elif k.lower() not in ['content-type', 'content-length']:
                 auth_headers.add(k, v)
         self.auth_headers = auth_headers
+        res = self.test_app.get('/', headers=auth_headers, status=200)
+        self.assertIsNone(res.html.find(id='login-message'))
+        self.assertIsNone(res.html.find(id='action-log-in'))
+        self.assertIsNone(res.html.find(id='action-register'))
+        self.assertIsNone(res.html.find(id='log-in-form'))
+        self.assertIsNone(res.html.find(id='register-form'))
+        logout = res.html.find(id='log-out')
+        self.assertIsNotNone(logout)
+        self.assertEqual(logout.form.span.span.string, '@' +
+                         self.user['nickname'])
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
-        self.test_app.post('/', {
+        res = self.test_app.post('/', {
                 'log-out': True,
-            }, headers=auth_headers, status=302)
+            }, headers=self.auth_headers, status=302)
         self.auth_headers = None
+        auth_headers = res.headers
+        res = self.test_app.get('/', headers=auth_headers, status=200)
+        self.assertIsNotNone(res.html.find(id='login-message'))
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['users'].delete_many({})
+        client.close()
+
+    def test_log_in_log_out(self):
+        pass
+
+
+class FunctionTestsWithReg(unittest.TestCase):
+
+    user = FunctionalAuthTests.user
+
+    def setUp(self):
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['users'].delete_many({})
+        client.close()
+        FunctionalAuthTests.setUp(self)
+        data = copy.copy(self.user)
+        data['register'] = True
+        data['passwd-confirm'] = data['password']
+        res = self.test_app.post('/', data, status=200)
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.account_created_success)
+        client = MongoClient(mongodb_url)
+        users = [x for x in client.hel['users'].find()]
+        client.close()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0]['nickname'], data['nickname'])
+
+    def test_failed_reg_nick_use(self):
+        res = self.test_app.post('/', {
+                'nickname': 'root',
+                'email': 'asd',
+                'password': '...',
+                'passwd-confirm': '...',
+                'register': True
+            }, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.nickname_in_use)
+
+    def test_failed_reg_email_use(self):
+        res = self.test_app.post('/', {
+                'nickname': 'root2',
+                'email': 'root@your.pc',
+                'password': '...',
+                'passwd-confirm': '...',
+                'register': True
+            }, status=200)
+        self.assertIsNone(res.html.find(id='log-out'))
+        message = res.html.find(id='login-message')
+        self.assertIsNotNone(message)
+        self.assertEqual(message.string, Messages.email_in_use)
+
+    def tearDown(self):
+        FunctionalAuthTests.tearDown(self)
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['users'].delete_many({})
+        client.close()

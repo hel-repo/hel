@@ -75,57 +75,59 @@ def home(request):
             email = request.POST['email'].strip()
             password = request.POST['password'].strip()
             passwd_confirm = request.POST['passwd-confirm'].strip()
-        except KeyError:
+        except (KeyError, AttributeError):
             message = Messages.bad_request
-        if nickname == '':
-            message = Messages.empty_nickname
-        elif email == '':
-            message = Messages.empty_email
-        elif password == '':
-            message = Messages.empty_password
         else:
-            pass_hash = hashlib.sha512(password.encode()).hexdigest()
-            user = request.db['users'].find_one({'nickname': nickname})
-            if user:
-                message = Messages.nickname_in_use
+            if nickname == '':
+                message = Messages.empty_nickname
+            elif email == '':
+                message = Messages.empty_email
+            elif password == '':
+                message = Messages.empty_password
             else:
-                user = request.db['users'].find_one({'email': email})
+                pass_hash = hashlib.sha512(password.encode()).hexdigest()
+                user = request.db['users'].find_one({'nickname': nickname})
                 if user:
-                    message = Messages.email_in_use
+                    message = Messages.nickname_in_use
                 else:
-                    if password != passwd_confirm:
-                        message = Messages.password_mismatch
+                    user = request.db['users'].find_one({'email': email})
+                    if user:
+                        message = Messages.email_in_use
                     else:
-                        act_phrase = os.urandom(
-                            request.registry.settings
-                            ['activation.length']).hex()
-                        act_till = (datetime.datetime.now() +
-                                    datetime.timedelta(
-                                        seconds=request.registry.settings
-                                        ['activation.time']))
-                        subrequest = Request.blank(
-                            '/users', method='POST', POST=(
-                                str(ModelUser(nickname=nickname, email=email,
-                                              password=pass_hash,
-                                              activation_phrase=act_phrase,
-                                              activation_till=act_till))),
-                            content_type='application/json')
-                        subrequest.no_permission_check = True
-                        response = request.invoke_subrequest(
-                            subrequest, use_tweens=True)
-                        if response.status_code == 201:
-                            # TODO: send activation email
-                            message = Messages.account_created_success
+                        if password != passwd_confirm:
+                            message = Messages.password_mismatch
                         else:
-                            message = Messages.internal_error
-                            log.error(
-                                'Could not create a user: subrequest'
-                                ' returned with status code %s!\n'
-                                'Local variables in frame:%s',
-                                response.status_code,
-                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                                         for x, y in locals().items()])
-                            )
+                            act_phrase = os.urandom(
+                                request.registry.settings
+                                ['activation.length']).hex()
+                            act_till = (datetime.datetime.now() +
+                                        datetime.timedelta(
+                                            seconds=request.registry.settings
+                                            ['activation.time']))
+                            subrequest = Request.blank(
+                                '/users', method='POST', POST=(
+                                    str(ModelUser(nickname=nickname,
+                                                  email=email,
+                                                  password=pass_hash,
+                                                  activation_phrase=act_phrase,
+                                                  activation_till=act_till))),
+                                content_type='application/json')
+                            subrequest.no_permission_check = True
+                            response = request.invoke_subrequest(
+                                subrequest, use_tweens=True)
+                            if response.status_code == 201:
+                                # TODO: send activation email
+                                message = Messages.account_created_success
+                            else:
+                                message = Messages.internal_error
+                                log.error(
+                                    'Could not create a user: subrequest'
+                                    ' returned with status code %s!\n'
+                                    'Local variables in frame:%s',
+                                    response.status_code,
+                                    ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                                             for x, y in locals().items()])
+                                )
     return {
         'project': 'hel',
         'message': message,
