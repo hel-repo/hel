@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
-from pyramid.traversal import find_root
 from pyramid.security import Allow, Everyone, Authenticated, ALL_PERMISSIONS
+from pyramid.traversal import find_root
 
 
 class Resource(dict):
@@ -45,7 +45,8 @@ class MongoCollection(Resource):
 
     def create(self, document):
         object_id = self.collection.insert(document)
-        return self.resource_name(ref=str(object_id), parent=self)
+        return self.resource_name(ref=str(object_id), parent=self,
+                                  id_as_ref=True)
 
 
 class MongoDocument(Resource):
@@ -73,21 +74,24 @@ class MongoDocument(Resource):
 
 class Package(MongoDocument):
 
-    def __init__(self, ref, parent):
-        MongoDocument.__init__(self, ref, parent)
-        self.spec = {'name': ref}
+    owner = None
 
-    def retrieve_owner(self):
-        if not hasattr(self, 'owner'):
-            self.owner = self.retrieve()['owner']
-            self.acl += [
-                (Allow, '@' + self.owner, ('pkg_delete', 'pkg_update',),),
-            ]
+    def __init__(self, ref, parent, id_as_ref=False):
+        MongoDocument.__init__(self, ref, parent)
+        if id_as_ref:
+            self.get_owner()
+        self.spec = {'name': ref}
+        if not id_as_ref:
+            self.get_owner()
+
+    def get_owner(self):
+        self.owner = self.owner or self.retrieve()['owner']
+        return self.owner
 
     def __acl__(self):
-        self.retrieve_owner()
         return self.acl + [
-            (Allow, Everyone, 'pkg_view',)
+            (Allow, Everyone, 'pkg_view',),
+            (Allow, self.owner, ('pkg_delete', 'pkg_update',),)
         ]
 
 
@@ -108,7 +112,7 @@ class Packages(MongoCollection):
 
 class User(MongoDocument):
 
-    def __init__(self, ref, parent):
+    def __init__(self, ref, parent, id_as_ref=False):
         MongoDocument.__init__(self, ref, parent)
         self.spec = {'nickname': ref}
 

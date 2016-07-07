@@ -23,7 +23,7 @@ class ModelPackage:
 
         if strict:
             for k in ['name', 'description', 'short_description', 'authors',
-                      'license', 'tags', 'version', 'screenshots']:
+                      'license', 'tags', 'versions', 'screenshots']:
                 if k not in kwargs:
                     raise KeyError(k)
 
@@ -33,6 +33,7 @@ class ModelPackage:
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
             elif k == 'versions':
+                data = {}
                 for ver, value in v.items():
                     files = {}
                     for file_url, f in value['files'].items():
@@ -46,17 +47,18 @@ class ModelPackage:
                             'version': str(dep_info['version']),
                             'type': str(dep_info['type'])
                         }
-                    v[str(semver.Version.coerce(str(ver)))] = {
+                    data[str(semver.Version.coerce(str(ver)))] = {
                         'files': files,
                         'depends': dependencies
                     }
-                self.data[k] = v
+                self.data[k] = data
             elif k == 'screenshots':
                 self.data[k] = {str(url): str(desc)
                                 for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
 
+    @property
     def json(self):
         return json.dumps(self.pkg)
 

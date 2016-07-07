@@ -154,7 +154,14 @@ def teapot(request):
 def update_package(context, request):
     query = {}
     for k, v in request.json_body.items():
-        if k in ['name', 'description', 'owner', 'license']:
+        if k == 'name':
+            check(v, str, Messages.type_mismatch % (k, 'str',))
+            if len([x for x in (request.db['packages']
+                                .find({'name': v}))]) > 0:
+                raise HTTPConflict(detail=Messages.pkg_name_conflict)
+            if not Constants.name_pattern.match(v):
+                raise HTTPBadRequest(detail=Messages.pkg_bad_name)
+        elif k in ['description', 'owner', 'license']:
             query[k] = check(
                 v, str,
                 Messages.type_mismatch % (k, 'str',))
@@ -266,6 +273,8 @@ def update_package(context, request):
                     query[k][url] = desc
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
+    if 'name' in query:
+        context.spec = {'name': query['name']}
 
     return Response(
         status='202 Accepted',
@@ -304,14 +313,19 @@ def delete_package(context, request):
 def create_package(context, request):
     try:
         pkg = ModelPackage(True, **request.json_body)
-    except:
-        raise HTTPBadRequest(detail=Messages.bad_package)
+    except (AttributeError, KeyError, TypeError, ValueError) as e:
+        raise HTTPBadRequest(detail=Messages.bad_package % str(e))
+    except Exception as e:
+        log.warn('Exception caught in create_package: %r.', e)
+        raise HTTPBadRequest(detail=Messages.bad_package % "'unknown'")
     if len([x for x in (request.db['packages']
                         .find({'name': pkg.data['name']}))]) > 0:
         raise HTTPConflict(detail=Messages.pkg_name_conflict)
     if not Constants.name_pattern.match(pkg.data['name']):
         raise HTTPBadRequest(detail=Messages.pkg_bad_name)
-    context.create(pkg.pkg)
+    data = pkg.pkg
+    data['owner'] = request.authenticated_userid
+    context.create(data)
 
     return Response(
         status='201 Created',

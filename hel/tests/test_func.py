@@ -248,11 +248,10 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         pass
 
     def test_create_bad_pkg(self):
-        res = self.test_app.post('/packages', """{
+        self.test_app.post('/packages', """{
                 "name": "hi",
                 "blah": "blah"
             }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.bad_package, str(res.text))
 
 
 class FunctionalTestsWithReg(unittest.TestCase):
@@ -326,8 +325,8 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         client = MongoClient(mongodb_url)
         client.hel['packages'].delete_many({})
         client.close()
-        for pkg in [self.pkg1, self.pkg2, self.pkg3]:
-            self.test_app.post('/packages', pkg.pkg,
+        for pkg in [self.pkg1, self.pkg2]:
+            self.test_app.post('/packages', str(pkg),
                                headers=self.auth_headers, status=201)
 
     def tearDown(self):
@@ -337,5 +336,63 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         client.hel['packages'].delete_many({})
         client.close()
 
-    def create_packages_success(self):
+    def test_create_packages_success(self):
         pass
+
+    def test_upd_pkg_name_conflict(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "name": "package-1"
+            }""", headers=self.auth_headers, status=409)
+        self.assertIn(Messages.pkg_name_conflict, res.text)
+
+    def test_upd_pkg_name_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "name": ["Hello", "there"]
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('name', 'str',), res.text)
+
+    def test_upd_pkg_name_bad(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "name": "hi.there"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.pkg_bad_name, res.text)
+
+    def test_upd_pkg_desc_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "description": ["Hello"]
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('description', 'str',),
+                      res.text)
+
+    def test_upd_pkg_owner_str(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "owner": ["Hi"]
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('owner', 'str',), res.text)
+
+    def test_upd_pkg_license_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "license": ["Hi"]
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('license', 'str',), res.text)
+
+    def test_upd_pkg_shdesc_str(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "short_description": ["Hi"]
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('short_description', 'str',),
+                      res.text)
+
+    def test_upd_pkg_authors_los(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "authors": "test"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('authors', 'list of strs',),
+                      res.text)
+
+    def test_upd_pkg_tags_los(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "tags": "test"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('tags', 'list of strs',),
+                      res.text)
