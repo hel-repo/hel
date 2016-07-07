@@ -8,7 +8,7 @@ from hel.utils.constants import Constants
 
 class ModelPackage:
 
-    def __init__(self, **kwargs):
+    def __init__(self, strict=False, **kwargs):
         self.data = {
             'name': '',
             'description': '',
@@ -20,6 +20,12 @@ class ModelPackage:
             'versions': {},
             'screenshots': {}
         }
+
+        if strict:
+            for k in ['name', 'description', 'short_description', 'authors',
+                      'license', 'tags', 'version', 'screenshots']:
+                if k not in kwargs:
+                    raise KeyError(k)
 
         for k, v in kwargs.items():
             if k in ['name', 'description', 'owner', 'license']:

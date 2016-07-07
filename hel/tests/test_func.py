@@ -4,6 +4,7 @@ import unittest
 from webob.headers import ResponseHeaders
 
 from hel.utils.messages import Messages
+from hel.utils.tests import sample_packages as s_pkgs
 
 
 deleted = False
@@ -163,6 +164,9 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0]['nickname'], data['nickname'])
 
+    def test_teapot(self):
+        self.test_app.post('/teapot', status=418)
+
 
 class FunctionalAuthTests(unittest.TestCase):
 
@@ -182,7 +186,7 @@ class FunctionalAuthTests(unittest.TestCase):
         self.assertEqual(message.string, Messages.failed_login)
 
 
-class FunctionTestsWithAuth(unittest.TestCase):
+class FunctionalTestsWithAuth(unittest.TestCase):
 
     user = FunctionalAuthTests.user
 
@@ -243,8 +247,15 @@ class FunctionTestsWithAuth(unittest.TestCase):
     def test_log_in_log_out(self):
         pass
 
+    def test_create_bad_pkg(self):
+        res = self.test_app.post('/packages', """{
+                "name": "hi",
+                "blah": "blah"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.bad_package, str(res.text))
 
-class FunctionTestsWithReg(unittest.TestCase):
+
+class FunctionalTestsWithReg(unittest.TestCase):
 
     user = FunctionalAuthTests.user
 
@@ -299,3 +310,32 @@ class FunctionTestsWithReg(unittest.TestCase):
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
+
+
+class FunctionalTestsWithPkg(unittest.TestCase):
+
+    user = FunctionalTestsWithAuth.user
+
+    pkg1 = s_pkgs.pkg1
+    pkg2 = s_pkgs.pkg2
+    pkg3 = s_pkgs.pkg3
+
+    def setUp(self):
+        FunctionalTestsWithAuth.setUp(self=self)
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['packages'].delete_many({})
+        client.close()
+        for pkg in [self.pkg1, self.pkg2, self.pkg3]:
+            self.test_app.post('/packages', pkg.pkg,
+                               headers=self.auth_headers, status=201)
+
+    def tearDown(self):
+        FunctionalTestsWithAuth.tearDown(self=self)
+        from pymongo import MongoClient
+        client = MongoClient(mongodb_url)
+        client.hel['packages'].delete_many({})
+        client.close()
+
+    def create_packages_success(self):
+        pass

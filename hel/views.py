@@ -303,7 +303,7 @@ def delete_package(context, request):
              permission='pkg_create')
 def create_package(context, request):
     try:
-        pkg = ModelPackage(**request.json_body)
+        pkg = ModelPackage(True, **request.json_body)
     except:
         raise HTTPBadRequest(detail=Messages.bad_package)
     if len([x for x in (request.db['packages']

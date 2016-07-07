@@ -101,7 +101,8 @@ class Packages(MongoCollection):
 
     def __acl__(self):
         return self.acl + [
-            (Allow, Everyone, 'pkgs_view',)
+            (Allow, Everyone, 'pkgs_view',),
+            (Allow, Authenticated, 'pkg_create',)  # TODO: Activated only
         ]
 
 
