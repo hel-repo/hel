@@ -1,6 +1,8 @@
 import copy
 import os
 import unittest
+
+from pymongo import MongoClient
 from webob.headers import ResponseHeaders
 
 from hel.utils.messages import Messages
@@ -26,7 +28,6 @@ class FunctionalTests(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
         global deleted
         if not deleted:
-            from pymongo import MongoClient
             mongo = MongoClient(mongodb_url)
             db = mongo.hel
             users = db['users']
@@ -150,7 +151,6 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(message.string, Messages.password_mismatch)
 
     def test_reg_success(self):
-        from pymongo import MongoClient
         data = copy.copy(self.user)
         data['register'] = True
         data['passwd-confirm'] = data['password']
@@ -191,7 +191,6 @@ class FunctionalTestsWithAuth(unittest.TestCase):
     user = FunctionalAuthTests.user
 
     def setUp(self):
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
@@ -239,7 +238,6 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         auth_headers = res.headers
         res = self.test_app.get('/', headers=auth_headers, status=200)
         self.assertIsNotNone(res.html.find(id='login-message'))
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
@@ -259,7 +257,6 @@ class FunctionalTestsWithReg(unittest.TestCase):
     user = FunctionalAuthTests.user
 
     def setUp(self):
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
@@ -305,7 +302,6 @@ class FunctionalTestsWithReg(unittest.TestCase):
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
@@ -321,7 +317,6 @@ class FunctionalTestsWithPkg(unittest.TestCase):
 
     def setUp(self):
         FunctionalTestsWithAuth.setUp(self=self)
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['packages'].delete_many({})
         client.close()
@@ -331,7 +326,6 @@ class FunctionalTestsWithPkg(unittest.TestCase):
 
     def tearDown(self):
         FunctionalTestsWithAuth.tearDown(self=self)
-        from pymongo import MongoClient
         client = MongoClient(mongodb_url)
         client.hel['packages'].delete_many({})
         client.close()
@@ -396,3 +390,339 @@ class FunctionalTestsWithPkg(unittest.TestCase):
             }""", headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('tags', 'list of strs',),
                       res.text)
+
+    def test_upd_pkg_ver_dict(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": "test"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('versions', 'dict',),
+                      res.text)
+
+    def test_upd_pkg_ver_num_bad(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "test": {}
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn("Version string lacks a numerical component: 'test'",
+                      res.text)
+
+    def test_upd_pkg_ver_v_dict(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.0.0": "hi :)"
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('version_info', 'dict',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_files_dict(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.2": {
+                        "files": "Hi :)"
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('files', 'dict',), res.text)
+
+    def test_upd_pkg_ver_v_files_url_str(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "files": {
+                            "http://example.com/file15": "test"
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('file_info', 'dict',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_files_dir_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.2": {
+                        "files": {
+                            "http://example.com/file28": {
+                                "dir": 101
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('file_dir', 'str',), res.text)
+
+    def test_upd_pkg_ver_v_files_name_str(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.1": {
+                        "files": {
+                            "http://example.com/file18": {
+                                "name": 101
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('file_name', 'str',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_deps_dict(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.0": {
+                        "depends": "test"
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('depends', 'dict',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_deps_ver_str(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "depends": {
+                            "dpackage-1": {
+                                "version": 222
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('dep_version', 'str',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_deps_ver_bad(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.1": {
+                        "depends": {
+                            "dpackage-4": {
+                                "version": "hi"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn("Invalid requirement specification: 'hi'", res.text)
+
+    def test_upd_pkg_ver_v_deps_ver_bad_2(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "depends": {
+                            "dpackage-1": {
+                                "version": "666.*"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn("Invalid version string: '666.*'", res.text)
+
+    def test_upd_pkg_ver_v_deps_type_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.1": {
+                        "depends": {
+                            "dpackage-4": {
+                                "type": 333
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('dep_type', 'str',),
+                      res.text)
+
+    def test_upd_pkg_ver_v_deps_type_bad(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "depends": {
+                            "dpackage-1": {
+                                "type": "hello"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.wrong_dep_type, res.text)
+
+    def test_upd_pkg_ver_none(self):
+        self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.2": null
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-2',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertNotIn('1.0.2', data['versions'])
+
+    def test_upd_pkg_ver_v_files_url_none(self):
+        self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "files": {
+                            "http://example.com/file15": null
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-1',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertNotIn('http://example.com/file15',
+                         data['versions']['1.1.0']['files'])
+
+    def test_upd_pkg_ver_v_deps(self):
+        self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.0": {
+                        "depends": {
+                            "dpackage-4": {
+                                "version": "*"
+                            },
+                            "dpackage-42": {
+                                "version": "^2.5",
+                                "type": "recommended"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-2',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertEqual(data['versions']['1.0.0']['depends']['dpackage-4']
+                         ['version'], '*')
+        self.assertIn('dpackage-42', data['versions']['1.0.0']['depends'])
+        self.assertEqual(data['versions']['1.0.0']['depends']['dpackage-42']
+                         ['version'], '^2.5')
+        self.assertEqual(data['versions']['1.0.0']['depends']['dpackage-42']
+                         ['type'], 'recommended')
+
+    def test_upd_pkg_partial_new_ver(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.2.0": {
+                        "files": {}
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.text)
+
+    def test_upd_pkg_partial_new_ver_files(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.0.0": {
+                        "files": {
+                            "http://example.com/file42": {
+                                "dir": "/test"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.text)
+
+    def test_upd_pkg_ver_v_files(self):
+        self.test_app.put('/packages/package-1', """{
+                "versions": {
+                    "1.1.0": {
+                        "files": {
+                            "http://example.com/file42": {
+                                "dir": "/bin",
+                                "name": "file42"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-1',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertIn('http://example.com/file42', data['versions']['1.1.0']
+                      ['files'])
+        self.assertEqual(data['versions']['1.1.0']['files']
+                         ['http://example.com/file42']['dir'], '/bin')
+        self.assertEqual(data['versions']['1.1.0']['files']
+                         ['http://example.com/file42']['name'], 'file42')
+
+    def test_upd_pkg_partial_dep(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "versions": {
+                    "1.1.0": {
+                        "files": {},
+                        "depends": {
+                            "dpackage-42": {
+                                "version": "*"
+                            }
+                        }
+                    }
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.text)
+
+    def test_upd_pkg_scr_dict(self):
+        res = self.test_app.put('/packages/package-1', """{
+                "screenshots": "Hi"
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('screenshots', 'dict',),
+                      res.text)
+
+    def test_upd_pkg_scr_desc_str(self):
+        res = self.test_app.put('/packages/package-2', """{
+                "screenshots": {
+                    "http://img.example.com/img22": ["Test"]
+                }
+            }""", headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('screenshot_desc', 'str',),
+                      res.text)
+
+    def test_upd_pkg_scr_desc_none(self):
+        self.test_app.put('/packages/package-1', """{
+                "screenshots": {
+                    "http://img.example.com/img12": null
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-1',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertNotIn('http://img.example.com/img12', data['screenshots'])
+
+    def test_upd_pkg_scr(self):
+        self.test_app.put('/packages/package-2', """{
+                "screenshots": {
+                    "http://img.example.com/img20": "Hi! :)"
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-2',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertIn('http://img.example.com/img20', data['screenshots'])
+        self.assertEqual(data['screenshots']['http://img.example.com/img20'],
+                         'Hi! :)')
+
+    def test_upd_pkg_scr_empty_str(self):
+        self.test_app.put('/packages/package-1', """{
+                "screenshots": {
+                    "http://img.example.com/img10": ""
+                }
+            }""", headers=self.auth_headers, status=202)
+        res = self.test_app.get(
+            '/packages/package-1',
+            headers=self.auth_headers, status=200)
+        data = res.json
+        self.assertIn('http://img.example.com/img10', data['screenshots'])
+        self.assertEqual(data['screenshots']['http://img.example.com/img10'],
+                         '')

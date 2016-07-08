@@ -27,11 +27,11 @@ pkg1 = ModelPackage(
             },
             'depends': {
                 'dpackage-1': {
-                    'version': '1.1^',
+                    'version': '~1.1',
                     'type': 'required'
                 },
                 'dpackage-2': {
-                    'version': '5.*',
+                    'version': '^5',
                     'type': 'optional'
                 },
                 'dpackage-3': {
@@ -57,11 +57,11 @@ pkg1 = ModelPackage(
             },
             'depends': {
                 'dpackage-1': {
-                    'version': '1.1^',
+                    'version': '~1.1',
                     'type': 'required'
                 },
                 'dpackage-2': {
-                    'version': '5.*',
+                    'version': '^5',
                     'type': 'optional'
                 },
                 'dpackage-3': {
@@ -87,11 +87,11 @@ pkg1 = ModelPackage(
             },
             'depends': {
                 'dpackage-1': {
-                    'version': '1.1^',
+                    'version': '~1.1',
                     'type': 'required'
                 },
                 'dpackage-2': {
-                    'version': '5.*',
+                    'version': '^5',
                     'type': 'optional'
                 },
                 'dpackage-3': {
@@ -134,11 +134,11 @@ pkg2 = ModelPackage(
             },
             'depends': {
                 'dpackage-4': {
-                    'version': '1.*',
+                    'version': '~1',
                     'type': 'required'
                 },
                 'dpackage-5': {
-                    'version': '3.5.6^',
+                    'version': '^3.5.6',
                     'type': 'optional'
                 },
                 'dpackage-6': {
@@ -164,11 +164,11 @@ pkg2 = ModelPackage(
             },
             'depends': {
                 'dpackage-4': {
-                    'version': '1.*',
+                    'version': '~1',
                     'type': 'required'
                 },
                 'dpackage-5': {
-                    'version': '3.5.6^',
+                    'version': '^3.5.6',
                     'type': 'optional'
                 },
                 'dpackage-6': {
@@ -194,11 +194,11 @@ pkg2 = ModelPackage(
             },
             'depends': {
                 'dpackage-4': {
-                    'version': '1.*',
+                    'version': '~1',
                     'type': 'required'
                 },
                 'dpackage-5': {
-                    'version': '3.5.6^',
+                    'version': '^3.5.6',
                     'type': 'optional'
                 },
                 'dpackage-6': {
@@ -241,11 +241,11 @@ pkg3 = ModelPackage(
             },
             'depends': {
                 'dpackage-7': {
-                    'version': '1.12.51^',
+                    'version': '~1.12.51',
                     'type': 'required'
                 },
                 'dpackage-8': {
-                    'version': '3.5.*',
+                    'version': '^3.5',
                     'type': 'optional'
                 },
                 'dpackage-9': {
@@ -271,11 +271,11 @@ pkg3 = ModelPackage(
             },
             'depends': {
                 'dpackage-7': {
-                    'version': '1.12.51^',
+                    'version': '~1.12.51',
                     'type': 'required'
                 },
                 'dpackage-8': {
-                    'version': '3.5.*',
+                    'version': '^3.5',
                     'type': 'optional'
                 },
                 'dpackage-9': {
@@ -301,11 +301,11 @@ pkg3 = ModelPackage(
             },
             'depends': {
                 'dpackage-7': {
-                    'version': '1.12.51^',
+                    'version': '~1.12.51',
                     'type': 'required'
                 },
                 'dpackage-8': {
-                    'version': '3.5.*',
+                    'version': '^3.5',
                     'type': 'optional'
                 },
                 'dpackage-9': {

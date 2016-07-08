@@ -66,7 +66,7 @@ class MongoDocument(Resource):
         return self.collection.find_one(self.get_spec())
 
     def update(self, *args, **kwargs):
-        self.collection.update(self.get_spec(), args[0])
+        self.collection.find_and_modify(self.get_spec(), args[0])
 
     def delete(self):
         self.collection.remove(self.get_spec())
@@ -85,14 +85,19 @@ class Package(MongoDocument):
             self.get_owner()
 
     def get_owner(self):
-        self.owner = self.owner or self.retrieve()['owner']
+        try:
+            self.owner = self.owner or self.retrieve()['owner']
+        except:
+            pass
         return self.owner
 
     def __acl__(self):
-        return self.acl + [
+        data = self.acl + [
             (Allow, Everyone, 'pkg_view',),
-            (Allow, self.owner, ('pkg_delete', 'pkg_update',),)
         ]
+        if self.owner:
+            data += [(Allow, self.owner, ('pkg_delete', 'pkg_update',),)]
+        return data
 
 
 class Packages(MongoCollection):

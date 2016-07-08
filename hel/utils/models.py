@@ -2,8 +2,9 @@ import json
 
 import semantic_version as semver
 
-from hel.utils.query import replace_chars_in_keys
 from hel.utils.constants import Constants
+from hel.utils.messages import Messages
+from hel.utils.query import replace_chars_in_keys
 
 
 class ModelPackage:
@@ -43,6 +44,13 @@ class ModelPackage:
                         }
                     dependencies = {}
                     for dep_name, dep_info in value['depends'].items():
+                        if dep_info['type'] not in [
+                                    'recommended',
+                                    'optional',
+                                    'required'
+                                ]:
+                            raise ValueError(Messages.wrong_dep_type)
+                        semver.Spec(dep_info['version'])
                         dependencies[str(dep_name)] = {
                             'version': str(dep_info['version']),
                             'type': str(dep_info['type'])

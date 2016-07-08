@@ -1,3 +1,4 @@
+import copy
 import datetime
 import hashlib
 import logging
@@ -5,14 +6,15 @@ import os
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
+    HTTPConflict,
     HTTPFound,
-    HTTPNotFound,
-    HTTPConflict
+    HTTPNotFound
 )
 from pyramid.request import Request
 from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config
+import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils.constants import Constants
@@ -128,6 +130,7 @@ def home(request):
                                     ''.join(['\n * ' + str(x) + ' = ' + str(y)
                                              for x, y in locals().items()])
                                 )
+    request.response.content_type = 'text/html'
     return {
         'project': 'hel',
         'message': message,
@@ -143,7 +146,7 @@ def home(request):
 def teapot(request):
     return Response(
         status="418 I'm a teapot",
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 # Package controller
@@ -153,6 +156,8 @@ def teapot(request):
              permission='pkg_update')
 def update_package(context, request):
     query = {}
+    old = replace_chars_in_keys(
+        context.retrieve(), Constants.key_replace_char, '.')
     for k, v in request.json_body.items():
         if k == 'name':
             check(v, str, Messages.type_mismatch % (k, 'str',))
@@ -176,43 +181,49 @@ def update_package(context, request):
             check(
                 v, dict,
                 Messages.type_mismatch % (k, 'dict',))
-            for num, ver in v.items():
-                check(
-                    num, str,
-                    Messages.type_mismatch % ('version', 'str',))
+            for n, ver in v.items():
+                try:
+                    num = str(semver.Version.coerce(n))
+                except ValueError as e:
+                    raise HTTPBadRequest(detail=str(e))
                 if ver is None:
-                    query[k] = query[k] or {}
-                    query[k]['versions'] = query[k]['versions'] or {}
-                    query[k]['versions'][num] = None
+                    if k not in query:
+                        query[k] = {}
+                    query[k][num] = None
                 else:
                     check(
                         ver, dict,
                         Messages.type_mismatch % ('version_info', 'dict',))
+                    if num not in old['versions']:
+                        if 'depends' not in ver or 'files' not in ver:
+                            print('1')
+                            raise HTTPBadRequest(detail=Messages.partial_ver)
                     if 'files' in ver:
                         check(
                             ver['files'], dict,
                             Messages.type_mismatch % ('files', 'dict',))
                         for url, file_info in ver['files'].items():
                             if file_info is None:
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
-                                query[k]['versions'][num]['files'][url] = None
+                                if k not in query:
+                                    query[k] = {}
+                                if num not in query[k]:
+                                    query[k][num] = {}
+                                if 'files' not in query[k][num]:
+                                    query[k][num]['files'] = {}
+                                query[k][num]['files'][url] = None
                             else:
                                 check(
                                     file_info, dict,
                                     Messages.type_mismatch % (
                                         'file_info', 'dict',))
-                                check(
-                                    url, str,
-                                    Messages.type_mismatch % ('url', 'str',))
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
+                                if ((num not in old['versions'] or
+                                        url not in old['versions'][num]
+                                        ['files']) and
+                                        ('dir' not in file_info or
+                                         'name' not in file_info)):
+                                    print('2')
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver)
                                 if ('dir' in file_info and
                                         check(
                                             file_info['dir'], str,
@@ -222,63 +233,119 @@ def update_package(context, request):
                                         check(
                                             file_info['name'], str,
                                             Messages.type_mismatch % (
-                                                k, 'str',))):
-                                    (query[k]['versions'][num]['files']
-                                     [url]) = {}
+                                                'file_name', 'str',))):
+                                    if k not in query:
+                                        query[k] = {}
+                                    if num not in query[k]:
+                                        query[k][num] = {}
+                                    if 'files' not in query[k][num]:
+                                        query[k][num]['files'] = {}
+                                    if url not in query[k][num]['files']:
+                                        (query[k][num]['files']
+                                         [url]) = {}
                                 if 'dir' in file_info:
-                                    (query[k]['versions'][num]['files']
+                                    (query[k][num]['files']
                                      [url]['dir']) = file_info['dir']
                                 if 'name' in file_info:
-                                    (query[k]['versions'][num]['files']
-                                     [url]['dir']) = file_info['name']
+                                    (query[k][num]['files']
+                                     [url]['name']) = file_info['name']
 
                     if 'depends' in ver:
                         check(
                             ver['depends'], dict,
                             Messages.type_mismatch % ('depends', 'dict',))
                         for dep_name, dep_info in ver['depends'].items():
-                            if dep_info is None:
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
-                                if ('version' in dep_info and
+                            check(
+                                dep_info, dict,
+                                Messages.type_mismatch % (
+                                    'dep_info', 'dict',))
+                            if dep_info:
+                                if ((num not in old['versions'] or
+                                        dep_name not in old['versions'][num]
+                                        ['depends']) and
+                                        ('version' not in dep_info or
+                                         'type' not in dep_info)):
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver)
+                                if k not in query:
+                                    query[k] = {}
+                                if num not in query[k]:
+                                    query[k][num] = {}
+                                if ('version' in dep_info or
+                                        'type' in dep_info):
+                                    if 'version' in dep_info:
                                         check(
                                             dep_info['version'], str,
                                             Messages.type_mismatch % (
-                                                'dep_version', 'str',)) or
-                                        'type' in dep_info and
+                                                'dep_version', 'str',))
+                                        try:
+                                            semver.Spec(dep_info['version'])
+                                        except ValueError as e:
+                                            raise HTTPBadRequest(
+                                                detail=str(e))
+                                    if 'type' in dep_info:
                                         check(
                                             dep_info['type'], str,
                                             Messages.type_mismatch % (
-                                                'dep_type', 'str',))):
-                                    query[k]['versions'][num]['depends'] = {}
+                                                'dep_type', 'str',))
+                                        if dep_info['type'] not in [
+                                                    'recommended',
+                                                    'optional',
+                                                    'required'
+                                                ]:
+                                            raise HTTPBadRequest(
+                                                detail=(
+                                                    Messages
+                                                    .wrong_dep_type))
+                                    if 'depends' not in query[k][num]:
+                                        query[k][num]['depends'] = {}
+                                    if (dep_name not in
+                                            query[k][num]['depends']):
+                                        (query[k][num]['depends']
+                                         [dep_name]) = {}
                                 if 'version' in dep_info:
-                                    (query[k]['versions'][num]['depends']
+                                    (query[k][num]['depends']
                                      [dep_name]['version']) = (
                                         dep_info['version'])
                                 if 'type' in dep_info:
-                                    (query[k]['versions'][num]['depends']
+                                    (query[k][num]['depends']
                                      [dep_name]['type']) = dep_info['type']
         elif k == 'screenshots':
             check(v, dict, Messages.type_mismatch % (k, 'dict',))
-            for url, desc in v:
-                check(
-                    url, str,
-                    Messages.type_mismatch % ('screenshot_key', 'str',))
-                if desc is None or check(
-                        desc, str,
-                        Messages.type_mismatch % ('screenshot_desc', 'str',)):
+            for url, desc in v.items():
+                if (desc is None or
+                        type(check(
+                            desc, str,
+                            Messages.type_mismatch % (
+                                'screenshot_desc', 'str',))) == str):
+                    if k not in query:
+                        query[k] = {}
                     query[k][url] = desc
+
+    def r(d, nd):
+        if type(d) == dict and type(nd) == dict:
+            result = copy.copy(d)
+            for k, v in nd.items():
+                if k in d:
+                    data = r(d[k], v)
+                    if data is not None:
+                        result[k] = data
+                    else:
+                        del result[k]
+                else:
+                    if v is not None:
+                        result[k] = v
+            return result
+        else:
+            return nd
+
+    query = r(old, query)
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
-    if 'name' in query:
-        context.spec = {'name': query['name']}
 
     return Response(
         status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -291,7 +358,9 @@ def get_package(context, request):
     if r is None:
         raise HTTPNotFound()
     else:
-        return r
+        del r['_id']
+        request.response.content_type = 'application/json'
+        return replace_chars_in_keys(r, Constants.key_replace_char, '.')
 
 
 @view_config(request_method='DELETE',
@@ -303,7 +372,7 @@ def delete_package(context, request):
 
     return Response(
         status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='POST',
@@ -329,7 +398,7 @@ def create_package(context, request):
 
     return Response(
         status='201 Created',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -350,6 +419,7 @@ def list_packages(context, request):
     searcher()
     packages = context.retrieve({})
     found = searcher.search(packages)
+    request.response.content_type = 'application/json'
     return found[offset:offset+length]
 
 
@@ -363,7 +433,7 @@ def update_user(context, request):
 
     return Response(
         status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -380,6 +450,7 @@ def get_user(context, request):
             'nickname': r['nickname'],
             'groups': r['groups']
         }
+        request.response.content_type = 'application/json'
         return data
 
 
@@ -392,7 +463,7 @@ def delete_user(context, request):
 
     return Response(
         status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='POST',
@@ -408,7 +479,7 @@ def create_user(context, request):
 
     return Response(
         status='201 Created',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -426,4 +497,5 @@ def list_users(context, request):
     except:
         offset = 0
     retrieved = context.retrieve(params)
+    request.response.content_type = 'application/json'
     return retrieved[offset:offset+length]
