@@ -17,6 +17,7 @@ from pyramid.view import view_config
 import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -163,9 +164,9 @@ def update_package(context, request):
             check(v, str, Messages.type_mismatch % (k, 'str',))
             if len([x for x in (request.db['packages']
                                 .find({'name': v}))]) > 0:
-                raise HTTPConflict(detail=Messages.pkg_name_conflict)
+                jexc(HTTPConflict, Messages.pkg_name_conflict)
             if not Constants.name_pattern.match(v):
-                raise HTTPBadRequest(detail=Messages.pkg_bad_name)
+                jexc(HTTPBadRequest, Messages.pkg_bad_name)
         elif k in ['description', 'owner', 'license']:
             query[k] = check(
                 v, str,
@@ -185,7 +186,7 @@ def update_package(context, request):
                 try:
                     num = str(semver.Version.coerce(n))
                 except ValueError as e:
-                    raise HTTPBadRequest(detail=str(e))
+                    jexc(HTTPBadRequest, str(e))
                 if ver is None:
                     if k not in query:
                         query[k] = {}
@@ -196,8 +197,7 @@ def update_package(context, request):
                         Messages.type_mismatch % ('version_info', 'dict',))
                     if num not in old['versions']:
                         if 'depends' not in ver or 'files' not in ver:
-                            print('1')
-                            raise HTTPBadRequest(detail=Messages.partial_ver)
+                            jexc(HTTPBadRequest, Messages.partial_ver)
                     if 'files' in ver:
                         check(
                             ver['files'], dict,
@@ -221,9 +221,7 @@ def update_package(context, request):
                                         ['files']) and
                                         ('dir' not in file_info or
                                          'name' not in file_info)):
-                                    print('2')
-                                    raise HTTPBadRequest(
-                                        detail=Messages.partial_ver)
+                                    jexc(HTTPBadRequest, Messages.partial_ver)
                                 if ('dir' in file_info and
                                         check(
                                             file_info['dir'], str,
@@ -265,8 +263,7 @@ def update_package(context, request):
                                         ['depends']) and
                                         ('version' not in dep_info or
                                          'type' not in dep_info)):
-                                    raise HTTPBadRequest(
-                                        detail=Messages.partial_ver)
+                                    jexc(HTTPBadRequest, Messages.partial_ver)
                                 if k not in query:
                                     query[k] = {}
                                 if num not in query[k]:
@@ -281,8 +278,7 @@ def update_package(context, request):
                                         try:
                                             semver.Spec(dep_info['version'])
                                         except ValueError as e:
-                                            raise HTTPBadRequest(
-                                                detail=str(e))
+                                            jexc(HTTPBadRequest, str(e))
                                     if 'type' in dep_info:
                                         check(
                                             dep_info['type'], str,
@@ -293,10 +289,8 @@ def update_package(context, request):
                                                     'optional',
                                                     'required'
                                                 ]:
-                                            raise HTTPBadRequest(
-                                                detail=(
-                                                    Messages
-                                                    .wrong_dep_type))
+                                            jexc(HTTPBadRequest,
+                                                 Messages.wrong_dep_type)
                                     if 'depends' not in query[k][num]:
                                         query[k][num]['depends'] = {}
                                     if (dep_name not in
@@ -344,7 +338,7 @@ def update_package(context, request):
     context.update(query, True)
 
     return Response(
-        status='202 Accepted',
+        status='204 No Content',
         content_type='application/json')
 
 
@@ -356,7 +350,7 @@ def get_package(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound()
+        jexc(HTTPNotFound)
     else:
         del r['_id']
         request.response.content_type = 'application/json'
@@ -371,7 +365,7 @@ def delete_package(context, request):
     context.delete()
 
     return Response(
-        status='202 Accepted',
+        status='204 No Content',
         content_type='application/json')
 
 
@@ -383,15 +377,15 @@ def create_package(context, request):
     try:
         pkg = ModelPackage(True, **request.json_body)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
-        raise HTTPBadRequest(detail=Messages.bad_package % str(e))
+        jexc(HTTPBadRequest, Messages.bad_package % str(e))
     except Exception as e:
         log.warn('Exception caught in create_package: %r.', e)
-        raise HTTPBadRequest(detail=Messages.bad_package % "'unknown'")
+        jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
     if len([x for x in (request.db['packages']
                         .find({'name': pkg.data['name']}))]) > 0:
-        raise HTTPConflict(detail=Messages.pkg_name_conflict)
+        jexc(HTTPConflict, Messages.pkg_name_conflict)
     if not Constants.name_pattern.match(pkg.data['name']):
-        raise HTTPBadRequest(detail=Messages.pkg_bad_name)
+        jexc(HTTPBadRequest, Messages.pkg_bad_name)
     data = pkg.pkg
     data['owner'] = request.authenticated_userid
     context.create(data)
@@ -432,7 +426,7 @@ def update_user(context, request):
     context.update(request.json_body, True)
 
     return Response(
-        status='202 Accepted',
+        status='204 No Content',
         content_type='application/json')
 
 
@@ -444,7 +438,7 @@ def get_user(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound()
+        jexc(HTTPNotFound)
     else:
         data = {
             'nickname': r['nickname'],
@@ -462,7 +456,7 @@ def delete_user(context, request):
     context.delete()
 
     return Response(
-        status='202 Accepted',
+        status='204 No Content',
         content_type='application/json')
 
 
@@ -474,7 +468,7 @@ def create_user(context, request):
     try:
         user = ModelUser(**request.json_body)
     except:
-        raise HTTPBadRequest(detail=Messages.bad_user)
+        jexc(HTTPBadRequest, Messages.bad_user)
     context.create(user.data)
 
     return Response(

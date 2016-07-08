@@ -246,10 +246,10 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         pass
 
     def test_create_bad_pkg(self):
-        self.test_app.post('/packages', """{
-                "name": "hi",
-                "blah": "blah"
-            }""", headers=self.auth_headers, status=400)
+        self.test_app.post_json('/packages', {
+                'name': 'hi',
+                'blah': 'blah'
+            }, headers=self.auth_headers, status=400)
 
 
 class FunctionalTestsWithReg(unittest.TestCase):
@@ -334,229 +334,237 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         pass
 
     def test_upd_pkg_name_conflict(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "name": "package-1"
-            }""", headers=self.auth_headers, status=409)
-        self.assertIn(Messages.pkg_name_conflict, res.text)
+        res = self.test_app.put_json('/packages/package-1', {
+                'name': 'package-1'
+            }, headers=self.auth_headers, status=409)
+        self.assertIn(Messages.pkg_name_conflict, res.json['message'])
 
     def test_upd_pkg_name_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "name": ["Hello", "there"]
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.type_mismatch % ('name', 'str',), res.text)
+        res = self.test_app.put_json('/packages/package-2', {
+                'name': ['Hello', 'there']
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('name', 'str',),
+                      res.json['message'])
 
     def test_upd_pkg_name_bad(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "name": "hi.there"
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.pkg_bad_name, res.text)
+        res = self.test_app.put_json('/packages/package-1', {
+                'name': 'hi.there'
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.pkg_bad_name,
+                      res.json['message'])
 
     def test_upd_pkg_desc_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "description": ["Hello"]
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-2', {
+                'description': ['Hello']
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('description', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_owner_str(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "owner": ["Hi"]
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.type_mismatch % ('owner', 'str',), res.text)
+        res = self.test_app.put_json('/packages/package-1', {
+                'owner': ['Hi']
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('owner', 'str',),
+                      res.json['message'])
 
     def test_upd_pkg_license_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "license": ["Hi"]
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.type_mismatch % ('license', 'str',), res.text)
+        res = self.test_app.put_json('/packages/package-2', {
+                'license': ['Hi']
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('license', 'str',),
+                      res.json['message'])
 
     def test_upd_pkg_shdesc_str(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "short_description": ["Hi"]
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-1', {
+                'short_description': ['Hi']
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('short_description', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_authors_los(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "authors": "test"
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-2', {
+                'authors': 'test'
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('authors', 'list of strs',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_tags_los(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "tags": "test"
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-2', {
+                'tags': 'test'
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('tags', 'list of strs',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_dict(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": "test"
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': 'test'
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('versions', 'dict',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_num_bad(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "test": {}
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    'test': {}
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn("Version string lacks a numerical component: 'test'",
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_dict(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.0.0": "hi :)"
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.0.0': 'hi :)'
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('version_info', 'dict',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_files_dict(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.2": {
-                        "files": "Hi :)"
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.2': {
+                        'files': 'Hi :)'
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.type_mismatch % ('files', 'dict',), res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('files', 'dict',),
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_files_url_str(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "files": {
-                            "http://example.com/file15": "test"
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'files': {
+                            'http://example.com/file15': 'test'
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('file_info', 'dict',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_files_dir_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.2": {
-                        "files": {
-                            "http://example.com/file28": {
-                                "dir": 101
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.2': {
+                        'files': {
+                            'http://example.com/file28': {
+                                'dir': 101
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.type_mismatch % ('file_dir', 'str',), res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.type_mismatch % ('file_dir', 'str',),
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_files_name_str(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.1": {
-                        "files": {
-                            "http://example.com/file18": {
-                                "name": 101
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'name': 101
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('file_name', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_dict(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.0": {
-                        "depends": "test"
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.0': {
+                        'depends': 'test'
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('depends', 'dict',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_ver_str(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "depends": {
-                            "dpackage-1": {
-                                "version": 222
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'depends': {
+                            'dpackage-1': {
+                                'version': 222
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('dep_version', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_ver_bad(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.1": {
-                        "depends": {
-                            "dpackage-4": {
-                                "version": "hi"
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.1': {
+                        'depends': {
+                            'dpackage-4': {
+                                'version': 'hi'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn("Invalid requirement specification: 'hi'", res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn("Invalid requirement specification: 'hi'",
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_ver_bad_2(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "depends": {
-                            "dpackage-1": {
-                                "version": "666.*"
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'depends': {
+                            'dpackage-1': {
+                                'version': '666.*'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn("Invalid version string: '666.*'", res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn("Invalid version string: '666.*'",
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_type_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.1": {
-                        "depends": {
-                            "dpackage-4": {
-                                "type": 333
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.1': {
+                        'depends': {
+                            'dpackage-4': {
+                                'type': 333
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('dep_type', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_ver_v_deps_type_bad(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "depends": {
-                            "dpackage-1": {
-                                "type": "hello"
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'depends': {
+                            'dpackage-1': {
+                                'type': 'hello'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.wrong_dep_type, res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.wrong_dep_type, res.json['message'])
 
     def test_upd_pkg_ver_none(self):
-        self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.2": null
+        self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.2': None
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
@@ -564,15 +572,15 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertNotIn('1.0.2', data['versions'])
 
     def test_upd_pkg_ver_v_files_url_none(self):
-        self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "files": {
-                            "http://example.com/file15": null
+        self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'files': {
+                            'http://example.com/file15': None
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
@@ -581,21 +589,21 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                          data['versions']['1.1.0']['files'])
 
     def test_upd_pkg_ver_v_deps(self):
-        self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.0": {
-                        "depends": {
-                            "dpackage-4": {
-                                "version": "*"
+        self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.0': {
+                        'depends': {
+                            'dpackage-4': {
+                                'version': '*'
                             },
-                            "dpackage-42": {
-                                "version": "^2.5",
-                                "type": "recommended"
+                            'dpackage-42': {
+                                'version': '^2.5',
+                                'type': 'recommended'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
@@ -609,42 +617,42 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                          ['type'], 'recommended')
 
     def test_upd_pkg_partial_new_ver(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.2.0": {
-                        "files": {}
+        res = self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.2.0': {
+                        'files': {}
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.partial_ver, res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.json['message'])
 
     def test_upd_pkg_partial_new_ver_files(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.0.0": {
-                        "files": {
-                            "http://example.com/file42": {
-                                "dir": "/test"
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.0.0': {
+                        'files': {
+                            'http://example.com/file42': {
+                                'dir': '/test'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.partial_ver, res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.json['message'])
 
     def test_upd_pkg_ver_v_files(self):
-        self.test_app.put('/packages/package-1', """{
-                "versions": {
-                    "1.1.0": {
-                        "files": {
-                            "http://example.com/file42": {
-                                "dir": "/bin",
-                                "name": "file42"
+        self.test_app.put_json('/packages/package-1', {
+                'versions': {
+                    '1.1.0': {
+                        'files': {
+                            'http://example.com/file42': {
+                                'dir': '/bin',
+                                'name': 'file42'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
@@ -657,42 +665,42 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                          ['http://example.com/file42']['name'], 'file42')
 
     def test_upd_pkg_partial_dep(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "versions": {
-                    "1.1.0": {
-                        "files": {},
-                        "depends": {
-                            "dpackage-42": {
-                                "version": "*"
+        res = self.test_app.put_json('/packages/package-2', {
+                'versions': {
+                    '1.1.0': {
+                        'files': {},
+                        'depends': {
+                            'dpackage-42': {
+                                'version': '*'
                             }
                         }
                     }
                 }
-            }""", headers=self.auth_headers, status=400)
-        self.assertIn(Messages.partial_ver, res.text)
+            }, headers=self.auth_headers, status=400)
+        self.assertIn(Messages.partial_ver, res.json['message'])
 
     def test_upd_pkg_scr_dict(self):
-        res = self.test_app.put('/packages/package-1', """{
-                "screenshots": "Hi"
-            }""", headers=self.auth_headers, status=400)
+        res = self.test_app.put_json('/packages/package-1', {
+                'screenshots': 'Hi'
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('screenshots', 'dict',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_scr_desc_str(self):
-        res = self.test_app.put('/packages/package-2', """{
-                "screenshots": {
-                    "http://img.example.com/img22": ["Test"]
+        res = self.test_app.put_json('/packages/package-2', {
+                'screenshots': {
+                    'http://img.example.com/img22': ['Test']
                 }
-            }""", headers=self.auth_headers, status=400)
+            }, headers=self.auth_headers, status=400)
         self.assertIn(Messages.type_mismatch % ('screenshot_desc', 'str',),
-                      res.text)
+                      res.json['message'])
 
     def test_upd_pkg_scr_desc_none(self):
-        self.test_app.put('/packages/package-1', """{
-                "screenshots": {
-                    "http://img.example.com/img12": null
+        self.test_app.put_json('/packages/package-1', {
+                'screenshots': {
+                    'http://img.example.com/img12': None
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
@@ -700,11 +708,11 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertNotIn('http://img.example.com/img12', data['screenshots'])
 
     def test_upd_pkg_scr(self):
-        self.test_app.put('/packages/package-2', """{
-                "screenshots": {
-                    "http://img.example.com/img20": "Hi! :)"
+        self.test_app.put_json('/packages/package-2', {
+                'screenshots': {
+                    'http://img.example.com/img20': 'Hi! :)'
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
@@ -714,11 +722,11 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                          'Hi! :)')
 
     def test_upd_pkg_scr_empty_str(self):
-        self.test_app.put('/packages/package-1', """{
-                "screenshots": {
-                    "http://img.example.com/img10": ""
+        self.test_app.put_json('/packages/package-1', {
+                'screenshots': {
+                    'http://img.example.com/img10': ''
                 }
-            }""", headers=self.auth_headers, status=202)
+            }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
@@ -726,3 +734,11 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertIn('http://img.example.com/img10', data['screenshots'])
         self.assertEqual(data['screenshots']['http://img.example.com/img10'],
                          '')
+
+    def test_get_non_existing_pkg(self):
+        self.test_app.get('/packages/hi-there', status=404)
+
+    def test_del_pkg(self):
+        self.test_app.delete(
+            '/packages/package-2',
+            headers=self.auth_headers, status=204)

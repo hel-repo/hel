@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPBadRequest
 
-from hel.utils import parse_search_phrase
+from hel.utils import parse_search_phrase, jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.version import latest_version
@@ -305,7 +305,7 @@ class PackagesSearcher:
 
 def check(value, expected_type, message=None):
     if type(value) != expected_type:
-        raise HTTPBadRequest(detail=message)
+        jexc(HTTPBadRequest, message)
     return value
 
 
@@ -323,10 +323,6 @@ def replace_chars_in_keys(d, repl_chr, repl_to):
         for k, v in d.items():
             result[k.replace(repl_chr, repl_to)] = replace_chars_in_keys(
                 v, repl_chr, repl_to)
-    except ValueError:
-        return d
-    except TypeError:
-        return d
-    except AttributeError:
+    except (ValueError, TypeError, AttributeError):
         return d
     return result
