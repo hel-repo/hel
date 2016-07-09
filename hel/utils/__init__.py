@@ -1,3 +1,6 @@
+import json
+
+
 def parse_search_phrase(s):
     result = []
     quote = ''
@@ -21,3 +24,17 @@ def parse_search_phrase(s):
     if word:
         result.append(word)
     return result
+
+
+def jexc(http_exc, info=None):
+    if not info:
+        info = http_exc.explanation
+    data = {
+        'message': info,
+        'code': http_exc.code,
+        'title': http_exc.title
+    }
+    e = http_exc()
+    e.content_type = 'application/json'
+    e.body = json.dumps(data).encode()
+    raise e

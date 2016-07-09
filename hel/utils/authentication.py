@@ -14,7 +14,7 @@ class HELAuthenticationPolicy(Policy):
         user = None
         try:
             user = request.user
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             pass
         if user:
             principals += [Authenticated, '@' + user['nickname']]

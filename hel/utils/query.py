@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPBadRequest
 
-from hel.utils import parse_search_phrase
+from hel.utils import parse_search_phrase, jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.version import latest_version
@@ -9,24 +9,6 @@ from hel.utils.version import latest_version
 def _only_one_param(func):
     func._only_one = True
     return func
-
-
-def concat_params(params, op='or'):
-    operator = '$' + op
-    if len(params) > 1:
-        return {operator: [x for x in params]}
-    elif len(params) == 1:
-        return params[0]
-    else:
-        raise ValueError
-
-
-def str_repl(s, repl_from, repl_to):
-    return str(s).replace(repl_from, repl_to)
-
-
-def undot(s):
-    return str_repl(s, '.', Constants.key_replace_char)
 
 
 class PackagesSearchParams:
@@ -268,20 +250,17 @@ class PackagesSearcher:
                 param_method = getattr(PackagesSearchParams, param_name)
                 if (not hasattr(param_method, '_no_param') and
                         (len(param) == 0 or param[0] == '')):
-                    raise HTTPBadRequest(
-                        detail=Messages.no_values % param_name)
+                    jexc(HTTPBadRequest, Messages.no_values % param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
-                        raise HTTPBadRequest(
-                            detail=Messages.too_many_values % (
-                                1, len(param),))
+                        jexc(HTTPBadRequest, Messages.too_many_values % (
+                             1, len(param),))
                     else:
                         param = param[0]
                 search = param_method(param)
                 searchers.append(search)
             else:
-                raise HTTPBadRequest(
-                    detail=Messages.bad_search_param % param_name)
+                jexc(HTTPBadRequest, Messages.bad_search_param % param_name)
         self.searchers = searchers
         return searchers
 
@@ -305,7 +284,7 @@ class PackagesSearcher:
 
 def check(value, expected_type, message=None):
     if type(value) != expected_type:
-        raise HTTPBadRequest(detail=message)
+        jexc(HTTPBadRequest, message)
     return value
 
 
@@ -313,7 +292,7 @@ def check_list_of_strs(value, message=None):
     check(value, list, message)
     for item in value:
         if type(item) != str:
-            raise HTTPBadRequest(detail=message)
+            jexc(HTTPBadRequest, message)
     return value
 
 
@@ -323,10 +302,6 @@ def replace_chars_in_keys(d, repl_chr, repl_to):
         for k, v in d.items():
             result[k.replace(repl_chr, repl_to)] = replace_chars_in_keys(
                 v, repl_chr, repl_to)
-    except ValueError:
-        return d
-    except TypeError:
-        return d
-    except AttributeError:
+    except (ValueError, TypeError, AttributeError):
         return d
     return result
