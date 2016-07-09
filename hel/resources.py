@@ -137,7 +137,7 @@ class Users(MongoCollection):
 
     def __acl__(self):
         return self.acl + [
-            (Allow, Authenticated, 'user_list',)
+            (Allow, Everyone, 'user_list',)
         ]
 
 

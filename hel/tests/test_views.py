@@ -5,7 +5,9 @@ from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
 
 from hel.utils.messages import Messages
-from hel.utils.tests import sample_packages as s_pkgs
+from hel.utils.tests import sample_packages as s_pkgs, are_equal
+
+
 from hel.utils.query import PackagesSearcher
 
 
@@ -22,17 +24,6 @@ class ViewTests(unittest.TestCase):
         request = testing.DummyRequest()
         info = home(request)
         self.assertEqual(info['project'], 'hel')
-
-
-# http://stackoverflow.com/a/8866661
-def are_equal(a, b):
-    unmatched = list(b)
-    for element in a:
-        try:
-            unmatched.remove(element)
-        except ValueError:
-            return False
-    return not unmatched
 
 
 def one_value_param(name):

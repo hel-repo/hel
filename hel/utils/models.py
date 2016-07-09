@@ -81,7 +81,7 @@ class ModelPackage:
 
 class ModelUser:
 
-    def __init__(self, **kwargs):
+    def __init__(self, strict=False, **kwargs):
         self.data = {
             'nickname': '',
             'groups': [],
@@ -90,6 +90,12 @@ class ModelUser:
             'activation_phrase': '',
             'activation_till': ''
         }
+
+        if strict:
+            for v in ['nickname', 'password', 'email', 'activation_phrase',
+                      'activation_till']:
+                if v not in kwargs:
+                    raise KeyError(v)
 
         for k, v in kwargs.items():
             if k in ['nickname', 'activation_till', 'password',

@@ -121,7 +121,7 @@ def home(request):
                             if response.status_code == 201:
                                 # TODO: send activation email
                                 message = Messages.account_created_success
-                            else:
+                            else:  # pragma: no cover
                                 message = Messages.internal_error
                                 log.error(
                                     'Could not create a user: subrequest'
@@ -151,7 +151,7 @@ def teapot(request):
 
 
 # Package controller
-@view_config(request_method='PUT',
+@view_config(request_method='PATCH',
              context=Package,
              renderer='json',
              permission='pkg_update')
@@ -378,7 +378,7 @@ def create_package(context, request):
         pkg = ModelPackage(True, **request.json_body)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
         jexc(HTTPBadRequest, Messages.bad_package % str(e))
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         log.warn('Exception caught in create_package: %r.', e)
         jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
     if len([x for x in (request.db['packages']
@@ -414,11 +414,16 @@ def list_packages(context, request):
     packages = context.retrieve({})
     found = searcher.search(packages)
     request.response.content_type = 'application/json'
-    return found[offset:offset+length]
+    result = found[offset:offset+length]
+    for v in result:
+        if '_id' in v:
+            del v['_id']
+
+    return result
 
 
 # User controller
-@view_config(request_method='PUT',
+@view_config(request_method='PATCH',
              context=User,
              renderer='json',
              permission='user_update')
@@ -466,7 +471,7 @@ def delete_user(context, request):
              permission='user_create')
 def create_user(context, request):
     try:
-        user = ModelUser(**request.json_body)
+        user = ModelUser(True, **request.json_body)
     except:
         jexc(HTTPBadRequest, Messages.bad_user)
     context.create(user.data)
@@ -490,6 +495,34 @@ def list_users(context, request):
         offset = int(offset)
     except:
         offset = 0
-    retrieved = context.retrieve(params)
+    params = params.dict_of_lists()
+    groups = None
+    if 'groups' in params:
+        groups = params['groups']
+    retrieved_raw = context.retrieve()
+    retrieved = []
+    if groups:
+        for v in retrieved_raw:
+            success = True
+            for group_query in groups:
+                success_loop = False
+                for group in v['groups']:
+                    if group_query == group:
+                        success_loop = True
+                        break
+                if not success_loop:
+                    success = False
+                    break
+            if success:
+                retrieved.append(v)
+    else:
+        retrieved = retrieved_raw
     request.response.content_type = 'application/json'
-    return retrieved[offset:offset+length]
+    res = retrieved[offset:offset+length]
+    result = []
+    for v in res:
+        result.append({
+                'nickname': v['nickname'],
+                'groups': v['groups']
+            })
+    return result
