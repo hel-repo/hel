@@ -1,3 +1,11 @@
+0.3.0
+-----
+- Wrappers for the remaining views.
+  - A wrapper around package creating.
+  - A User:GET wrapper.
+  - A User:POST wrapper.
+- 100% test coverage.
+
 0.2.0
 -----
 - Short description search.

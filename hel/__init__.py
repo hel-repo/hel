@@ -36,7 +36,7 @@ def main(global_config, **settings):
 
     # Auth
     auth_secret = "巏⇟ू攛劈ᜤ漢࿅䓽奧䬙摀曇䰤䙙൪ᴹ喼唣壆"
-    if 'AUTH_SECRET' in os.environ:
+    if 'AUTH_SECRET' in os.environ:  # pragma: no cover
         auth_secret = os.environ["AUTH_SECRET"]
     authentication_policy = HELAuthenticationPolicy(
             auth_secret, hashalg='sha512')
@@ -61,9 +61,9 @@ def main(global_config, **settings):
 
     # Setup MongoDB
     url = 'mongodb://localhost:27017/'
-    if 'MONGODB_URL' in os.environ:
+    if 'MONGODB_URL' in os.environ:  # pragma: no cover
         url = os.environ['MONGODB_URL']
-    elif 'mongo_db_url' in settings:
+    elif 'mongo_db_url' in settings:  # pragma: no cover
         url = settings['mongo_db_url']
     config.registry.mongo = MongoClient(url)
 

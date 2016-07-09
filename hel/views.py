@@ -1,18 +1,26 @@
+import copy
 import datetime
 import hashlib
 import logging
 import os
 
-from pyramid.httpexceptions import HTTPNotFound, HTTPFound
+from pyramid.httpexceptions import (
+    HTTPBadRequest,
+    HTTPConflict,
+    HTTPFound,
+    HTTPNotFound
+)
 from pyramid.request import Request
 from pyramid.response import Response
-from pyramid.security import remember, forget
+from pyramid.security import forget, remember
 from pyramid.view import view_config
+import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
-from hel.utils.models import ModelUser
+from hel.utils.models import ModelPackage, ModelUser
 from hel.utils.query import (
     PackagesSearcher,
     check,
@@ -70,57 +78,60 @@ def home(request):
             email = request.POST['email'].strip()
             password = request.POST['password'].strip()
             passwd_confirm = request.POST['passwd-confirm'].strip()
-        except KeyError:
+        except (KeyError, AttributeError):
             message = Messages.bad_request
-        if nickname == '':
-            message = Messages.empty_nickname
-        elif email == '':
-            message = Messages.empty_email
-        elif password == '':
-            message = Messages.empty_password
         else:
-            pass_hash = hashlib.sha512(password.encode()).hexdigest()
-            user = request.db['users'].find_one({'nickname': nickname})
-            if user:
-                message = Messages.nickname_in_use
+            if nickname == '':
+                message = Messages.empty_nickname
+            elif email == '':
+                message = Messages.empty_email
+            elif password == '':
+                message = Messages.empty_password
             else:
-                user = request.db['users'].find_one({'email': email})
+                pass_hash = hashlib.sha512(password.encode()).hexdigest()
+                user = request.db['users'].find_one({'nickname': nickname})
                 if user:
-                    message = Messages.email_in_use
+                    message = Messages.nickname_in_use
                 else:
-                    if password != passwd_confirm:
-                        message = Messages.password_mismatch
+                    user = request.db['users'].find_one({'email': email})
+                    if user:
+                        message = Messages.email_in_use
                     else:
-                        act_phrase = os.urandom(
-                            request.registry.settings
-                            ['activation.length']).hex()
-                        act_till = (datetime.datetime.now() +
-                                    datetime.timedelta(
-                                        seconds=request.registry.settings
-                                        ['activation.time']))
-                        subrequest = Request.blank(
-                            '/users', method='POST', POST=(
-                                str(ModelUser(nickname=nickname, email=email,
-                                              password=pass_hash,
-                                              activation_phrase=act_phrase,
-                                              activation_till=act_till))),
-                            content_type='application/json')
-                        subrequest.no_permission_check = True
-                        response = request.invoke_subrequest(
-                            subrequest, use_tweens=True)
-                        if response.status_code == 201:
-                            # TODO: send activation email
-                            message = Messages.account_created_success
+                        if password != passwd_confirm:
+                            message = Messages.password_mismatch
                         else:
-                            message = Messages.internal_error
-                            log.error(
-                                'Could not create a user: subrequest'
-                                ' returned with status code %s!\n'
-                                'Local variables in frame:%s',
-                                response.status_code,
-                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                                         for x, y in locals().items()])
-                            )
+                            act_phrase = os.urandom(
+                                request.registry.settings
+                                ['activation.length']).hex()
+                            act_till = (datetime.datetime.now() +
+                                        datetime.timedelta(
+                                            seconds=request.registry.settings
+                                            ['activation.time']))
+                            subrequest = Request.blank(
+                                '/users', method='POST', POST=(
+                                    str(ModelUser(nickname=nickname,
+                                                  email=email,
+                                                  password=pass_hash,
+                                                  activation_phrase=act_phrase,
+                                                  activation_till=act_till))),
+                                content_type='application/json')
+                            subrequest.no_permission_check = True
+                            response = request.invoke_subrequest(
+                                subrequest, use_tweens=True)
+                            if response.status_code == 201:
+                                # TODO: send activation email
+                                message = Messages.account_created_success
+                            else:  # pragma: no cover
+                                message = Messages.internal_error
+                                log.error(
+                                    'Could not create a user: subrequest'
+                                    ' returned with status code %s!\n'
+                                    'Local variables in frame:%s',
+                                    response.status_code,
+                                    ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                                             for x, y in locals().items()])
+                                )
+    request.response.content_type = 'text/html'
     return {
         'project': 'hel',
         'message': message,
@@ -136,18 +147,27 @@ def home(request):
 def teapot(request):
     return Response(
         status="418 I'm a teapot",
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 # Package controller
-@view_config(request_method='PUT',
+@view_config(request_method='PATCH',
              context=Package,
              renderer='json',
              permission='pkg_update')
 def update_package(context, request):
     query = {}
+    old = replace_chars_in_keys(
+        context.retrieve(), Constants.key_replace_char, '.')
     for k, v in request.json_body.items():
-        if k in ['name', 'description', 'owner', 'license']:
+        if k == 'name':
+            check(v, str, Messages.type_mismatch % (k, 'str',))
+            if len([x for x in (request.db['packages']
+                                .find({'name': v}))]) > 0:
+                jexc(HTTPConflict, Messages.pkg_name_conflict)
+            if not Constants.name_pattern.match(v):
+                jexc(HTTPBadRequest, Messages.pkg_bad_name)
+        elif k in ['description', 'owner', 'license']:
             query[k] = check(
                 v, str,
                 Messages.type_mismatch % (k, 'str',))
@@ -162,43 +182,46 @@ def update_package(context, request):
             check(
                 v, dict,
                 Messages.type_mismatch % (k, 'dict',))
-            for num, ver in v.items():
-                check(
-                    num, str,
-                    Messages.type_mismatch % ('version', 'str',))
+            for n, ver in v.items():
+                try:
+                    num = str(semver.Version.coerce(n))
+                except ValueError as e:
+                    jexc(HTTPBadRequest, str(e))
                 if ver is None:
-                    query[k] = query[k] or {}
-                    query[k]['versions'] = query[k]['versions'] or {}
-                    query[k]['versions'][num] = None
+                    if k not in query:
+                        query[k] = {}
+                    query[k][num] = None
                 else:
                     check(
                         ver, dict,
                         Messages.type_mismatch % ('version_info', 'dict',))
+                    if num not in old['versions']:
+                        if 'depends' not in ver or 'files' not in ver:
+                            jexc(HTTPBadRequest, Messages.partial_ver)
                     if 'files' in ver:
                         check(
                             ver['files'], dict,
                             Messages.type_mismatch % ('files', 'dict',))
                         for url, file_info in ver['files'].items():
                             if file_info is None:
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
-                                query[k]['versions'][num]['files'][url] = None
+                                if k not in query:
+                                    query[k] = {}
+                                if num not in query[k]:
+                                    query[k][num] = {}
+                                if 'files' not in query[k][num]:
+                                    query[k][num]['files'] = {}
+                                query[k][num]['files'][url] = None
                             else:
                                 check(
                                     file_info, dict,
                                     Messages.type_mismatch % (
                                         'file_info', 'dict',))
-                                check(
-                                    url, str,
-                                    Messages.type_mismatch % ('url', 'str',))
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
+                                if ((num not in old['versions'] or
+                                        url not in old['versions'][num]
+                                        ['files']) and
+                                        ('dir' not in file_info or
+                                         'name' not in file_info)):
+                                    jexc(HTTPBadRequest, Messages.partial_ver)
                                 if ('dir' in file_info and
                                         check(
                                             file_info['dir'], str,
@@ -208,61 +231,115 @@ def update_package(context, request):
                                         check(
                                             file_info['name'], str,
                                             Messages.type_mismatch % (
-                                                k, 'str',))):
-                                    (query[k]['versions'][num]['files']
-                                     [url]) = {}
+                                                'file_name', 'str',))):
+                                    if k not in query:
+                                        query[k] = {}
+                                    if num not in query[k]:
+                                        query[k][num] = {}
+                                    if 'files' not in query[k][num]:
+                                        query[k][num]['files'] = {}
+                                    if url not in query[k][num]['files']:
+                                        (query[k][num]['files']
+                                         [url]) = {}
                                 if 'dir' in file_info:
-                                    (query[k]['versions'][num]['files']
+                                    (query[k][num]['files']
                                      [url]['dir']) = file_info['dir']
                                 if 'name' in file_info:
-                                    (query[k]['versions'][num]['files']
-                                     [url]['dir']) = file_info['name']
+                                    (query[k][num]['files']
+                                     [url]['name']) = file_info['name']
 
                     if 'depends' in ver:
                         check(
                             ver['depends'], dict,
                             Messages.type_mismatch % ('depends', 'dict',))
                         for dep_name, dep_info in ver['depends'].items():
-                            if dep_info is None:
-                                query[k] = query[k] or {}
-                                query[k]['versions'] = (
-                                    query[k]['versions'] or {})
-                                query[k]['versions'][num] = (
-                                    query[k]['versions'][num] or {})
-                                if ('version' in dep_info and
+                            check(
+                                dep_info, dict,
+                                Messages.type_mismatch % (
+                                    'dep_info', 'dict',))
+                            if dep_info:
+                                if ((num not in old['versions'] or
+                                        dep_name not in old['versions'][num]
+                                        ['depends']) and
+                                        ('version' not in dep_info or
+                                         'type' not in dep_info)):
+                                    jexc(HTTPBadRequest, Messages.partial_ver)
+                                if k not in query:
+                                    query[k] = {}
+                                if num not in query[k]:
+                                    query[k][num] = {}
+                                if ('version' in dep_info or
+                                        'type' in dep_info):
+                                    if 'version' in dep_info:
                                         check(
                                             dep_info['version'], str,
                                             Messages.type_mismatch % (
-                                                'dep_version', 'str',)) or
-                                        'type' in dep_info and
+                                                'dep_version', 'str',))
+                                        try:
+                                            semver.Spec(dep_info['version'])
+                                        except ValueError as e:
+                                            jexc(HTTPBadRequest, str(e))
+                                    if 'type' in dep_info:
                                         check(
                                             dep_info['type'], str,
                                             Messages.type_mismatch % (
-                                                'dep_type', 'str',))):
-                                    query[k]['versions'][num]['depends'] = {}
+                                                'dep_type', 'str',))
+                                        if dep_info['type'] not in [
+                                                    'recommended',
+                                                    'optional',
+                                                    'required'
+                                                ]:
+                                            jexc(HTTPBadRequest,
+                                                 Messages.wrong_dep_type)
+                                    if 'depends' not in query[k][num]:
+                                        query[k][num]['depends'] = {}
+                                    if (dep_name not in
+                                            query[k][num]['depends']):
+                                        (query[k][num]['depends']
+                                         [dep_name]) = {}
                                 if 'version' in dep_info:
-                                    (query[k]['versions'][num]['depends']
+                                    (query[k][num]['depends']
                                      [dep_name]['version']) = (
                                         dep_info['version'])
                                 if 'type' in dep_info:
-                                    (query[k]['versions'][num]['depends']
+                                    (query[k][num]['depends']
                                      [dep_name]['type']) = dep_info['type']
         elif k == 'screenshots':
             check(v, dict, Messages.type_mismatch % (k, 'dict',))
-            for url, desc in v:
-                check(
-                    url, str,
-                    Messages.type_mismatch % ('screenshot_key', 'str',))
-                if desc is None or check(
-                        desc, str,
-                        Messages.type_mismatch % ('screenshot_desc', 'str',)):
+            for url, desc in v.items():
+                if (desc is None or
+                        type(check(
+                            desc, str,
+                            Messages.type_mismatch % (
+                                'screenshot_desc', 'str',))) == str):
+                    if k not in query:
+                        query[k] = {}
                     query[k][url] = desc
+
+    def r(d, nd):
+        if type(d) == dict and type(nd) == dict:
+            result = copy.copy(d)
+            for k, v in nd.items():
+                if k in d:
+                    data = r(d[k], v)
+                    if data is not None:
+                        result[k] = data
+                    else:
+                        del result[k]
+                else:
+                    if v is not None:
+                        result[k] = v
+            return result
+        else:
+            return nd
+
+    query = r(old, query)
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
     return Response(
-        status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        status='204 No Content',
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -273,9 +350,11 @@ def get_package(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound()
+        jexc(HTTPNotFound)
     else:
-        return r
+        del r['_id']
+        request.response.content_type = 'application/json'
+        return replace_chars_in_keys(r, Constants.key_replace_char, '.')
 
 
 @view_config(request_method='DELETE',
@@ -286,8 +365,8 @@ def delete_package(context, request):
     context.delete()
 
     return Response(
-        status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        status='204 No Content',
+        content_type='application/json')
 
 
 @view_config(request_method='POST',
@@ -295,13 +374,25 @@ def delete_package(context, request):
              renderer='json',
              permission='pkg_create')
 def create_package(context, request):
-    data = replace_chars_in_keys(request.json_body, '.',
-                                 Constants.key_replace_char)
+    try:
+        pkg = ModelPackage(True, **request.json_body)
+    except (AttributeError, KeyError, TypeError, ValueError) as e:
+        jexc(HTTPBadRequest, Messages.bad_package % str(e))
+    except Exception as e:  # pragma: no cover
+        log.warn('Exception caught in create_package: %r.', e)
+        jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
+    if len([x for x in (request.db['packages']
+                        .find({'name': pkg.data['name']}))]) > 0:
+        jexc(HTTPConflict, Messages.pkg_name_conflict)
+    if not Constants.name_pattern.match(pkg.data['name']):
+        jexc(HTTPBadRequest, Messages.pkg_bad_name)
+    data = pkg.pkg
+    data['owner'] = request.authenticated_userid
     context.create(data)
 
     return Response(
         status='201 Created',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -322,11 +413,17 @@ def list_packages(context, request):
     searcher()
     packages = context.retrieve({})
     found = searcher.search(packages)
-    return found[offset:offset+length]
+    request.response.content_type = 'application/json'
+    result = found[offset:offset+length]
+    for v in result:
+        if '_id' in v:
+            del v['_id']
+
+    return result
 
 
 # User controller
-@view_config(request_method='PUT',
+@view_config(request_method='PATCH',
              context=User,
              renderer='json',
              permission='user_update')
@@ -334,8 +431,8 @@ def update_user(context, request):
     context.update(request.json_body, True)
 
     return Response(
-        status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        status='204 No Content',
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -346,9 +443,14 @@ def get_user(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound()
+        jexc(HTTPNotFound)
     else:
-        return r
+        data = {
+            'nickname': r['nickname'],
+            'groups': r['groups']
+        }
+        request.response.content_type = 'application/json'
+        return data
 
 
 @view_config(request_method='DELETE',
@@ -359,8 +461,8 @@ def delete_user(context, request):
     context.delete()
 
     return Response(
-        status='202 Accepted',
-        content_type='application/json; charset=UTF-8')
+        status='204 No Content',
+        content_type='application/json')
 
 
 @view_config(request_method='POST',
@@ -368,11 +470,15 @@ def delete_user(context, request):
              renderer='json',
              permission='user_create')
 def create_user(context, request):
-    context.create(request.json_body)
+    try:
+        user = ModelUser(True, **request.json_body)
+    except:
+        jexc(HTTPBadRequest, Messages.bad_user)
+    context.create(user.data)
 
     return Response(
         status='201 Created',
-        content_type='application/json; charset=UTF-8')
+        content_type='application/json')
 
 
 @view_config(request_method='GET',
@@ -389,5 +495,34 @@ def list_users(context, request):
         offset = int(offset)
     except:
         offset = 0
-    retrieved = context.retrieve(params)
-    return retrieved[offset:offset+length]
+    params = params.dict_of_lists()
+    groups = None
+    if 'groups' in params:
+        groups = params['groups']
+    retrieved_raw = context.retrieve()
+    retrieved = []
+    if groups:
+        for v in retrieved_raw:
+            success = True
+            for group_query in groups:
+                success_loop = False
+                for group in v['groups']:
+                    if group_query == group:
+                        success_loop = True
+                        break
+                if not success_loop:
+                    success = False
+                    break
+            if success:
+                retrieved.append(v)
+    else:
+        retrieved = retrieved_raw
+    request.response.content_type = 'application/json'
+    res = retrieved[offset:offset+length]
+    result = []
+    for v in res:
+        result.append({
+                'nickname': v['nickname'],
+                'groups': v['groups']
+            })
+    return result
