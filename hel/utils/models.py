@@ -104,8 +104,9 @@ class ModelUser:
             elif k == 'groups':
                 self.data[k] = [str(x) for x in v]
 
+    @property
     def json(self):
         return json.dumps(self.data)
 
     def __str__(self):
-        return self.json()
+        return self.json

@@ -11,24 +11,6 @@ def _only_one_param(func):
     return func
 
 
-def concat_params(params, op='or'):
-    operator = '$' + op
-    if len(params) > 1:
-        return {operator: [x for x in params]}
-    elif len(params) == 1:
-        return params[0]
-    else:
-        raise ValueError
-
-
-def str_repl(s, repl_from, repl_to):
-    return str(s).replace(repl_from, repl_to)
-
-
-def undot(s):
-    return str_repl(s, '.', Constants.key_replace_char)
-
-
 class PackagesSearchParams:
 
     @_only_one_param
@@ -268,20 +250,17 @@ class PackagesSearcher:
                 param_method = getattr(PackagesSearchParams, param_name)
                 if (not hasattr(param_method, '_no_param') and
                         (len(param) == 0 or param[0] == '')):
-                    raise HTTPBadRequest(
-                        detail=Messages.no_values % param_name)
+                    jexc(HTTPBadRequest, Messages.no_values % param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
-                        raise HTTPBadRequest(
-                            detail=Messages.too_many_values % (
-                                1, len(param),))
+                        jexc(HTTPBadRequest, Messages.too_many_values % (
+                             1, len(param),))
                     else:
                         param = param[0]
                 search = param_method(param)
                 searchers.append(search)
             else:
-                raise HTTPBadRequest(
-                    detail=Messages.bad_search_param % param_name)
+                jexc(HTTPBadRequest, Messages.bad_search_param % param_name)
         self.searchers = searchers
         return searchers
 
@@ -313,7 +292,7 @@ def check_list_of_strs(value, message=None):
     check(value, list, message)
     for item in value:
         if type(item) != str:
-            raise HTTPBadRequest(detail=message)
+            jexc(HTTPBadRequest, message)
     return value
 
 

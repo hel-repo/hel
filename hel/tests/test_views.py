@@ -1,3 +1,4 @@
+import json
 import os
 import unittest
 
@@ -40,7 +41,8 @@ def one_value_param(name):
                         name: []
                     })()
                 except HTTPBadRequest as e:
-                    if str(e) == Messages.no_values % name:
+                    if (json.loads(e.body.decode('utf-8'))
+                            ['message'] == Messages.no_values % name):
                         # Expected exception
                         pass
                     else:
@@ -56,7 +58,9 @@ def one_value_param(name):
                             name: ['hel'] * i
                         })()
                     except HTTPBadRequest as e:
-                        if str(e) == Messages.too_many_values % (1, i):
+                        if (json.loads(e.body.decode('utf-8'))
+                                ['message'] == Messages.too_many_values % (
+                                1, i)):
                             # Expected exception
                             pass
                         else:
@@ -98,7 +102,8 @@ def param(name):
                         name: []
                     })()
                 except HTTPBadRequest as e:
-                    if str(e) == Messages.no_values % name:
+                    if (json.loads(e.body.decode('utf-8'))
+                            ['message'] == Messages.no_values % name):
                         # Expected exception
                         pass
                     else:
@@ -248,7 +253,8 @@ class PkgSearchTests(unittest.TestCase):
     @param('dependency')
     def test_pkg_search_dependency(self):
         return [
-            (['dpackage-8:3.5.*'], [self.pkg3],),
+            (['dpackage-8:^3.5'], [self.pkg3],),
+            (['dpackage-8:^3.5:required'], []),
             (['dpackage-1:6.6.6:recommended'], [],),
             (['dpackage-2'], [self.pkg1],)
         ]
@@ -263,3 +269,12 @@ class PkgSearchTests(unittest.TestCase):
             (['http://img.example.com/img42'], [],),
             (['http://img.example.com/img32'], [self.pkg3],)
         ]
+
+    def test_bad_search_param(self):
+        try:
+            PackagesSearcher({'hi': ['test']})()
+        except HTTPBadRequest as e:
+            self.assertEqual(json.loads(e.body.decode('utf-8'))['message'],
+                             Messages.bad_search_param % 'hi')
+        else:
+            raise AssertionError()
