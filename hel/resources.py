@@ -14,7 +14,11 @@ class Resource(dict):
         self.acl += [
             (Allow, '~admins', ALL_PERMISSIONS,),
             (Allow, '~system', ALL_PERMISSIONS,),
-            (Allow, '~allperms', ALL_PERMISSIONS,)
+            (Allow, '~allperms', ALL_PERMISSIONS,),
+            (Allow, Everyone, 'pkg_view',),
+            (Allow, Everyone, 'pkgs_view',),
+            (Allow, Authenticated, 'pkg_create',),  # TODO: Activated only
+            (Allow, Everyone, 'user_list',)
         ]
 
     def __repr__(self):
@@ -92,9 +96,7 @@ class Package(MongoDocument):
         return self.owner
 
     def __acl__(self):
-        data = self.acl + [
-            (Allow, Everyone, 'pkg_view',),
-        ]
+        data = self.acl
         if self.owner:
             data += [(Allow, self.owner, ('pkg_delete', 'pkg_update',),)]
         return data
@@ -108,12 +110,6 @@ class Packages(MongoCollection):
     def __getitem__(self, ref):
         return Package(ref, self)
 
-    def __acl__(self):
-        return self.acl + [
-            (Allow, Everyone, 'pkgs_view',),
-            (Allow, Authenticated, 'pkg_create',)  # TODO: Activated only
-        ]
-
 
 class User(MongoDocument):
 
@@ -123,7 +119,8 @@ class User(MongoDocument):
 
     def __acl__(self):
         return self.acl + [
-            (Allow, '@' + self.ref, ('user_update', 'user_get',),),
+            (Allow, '@' + self.spec['nickname'],
+             ('user_update', 'user_get',),),
         ]
 
 
@@ -136,9 +133,7 @@ class Users(MongoCollection):
         return User(ref, self)
 
     def __acl__(self):
-        return self.acl + [
-            (Allow, Everyone, 'user_list',)
-        ]
+        return self.acl
 
 
 class Root(Resource):
