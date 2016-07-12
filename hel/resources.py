@@ -119,8 +119,7 @@ class User(MongoDocument):
 
     def __acl__(self):
         return self.acl + [
-            (Allow, '@' + self.spec['nickname'],
-             ('user_update', 'user_get',),),
+            (Allow, '@' + self.spec['nickname'], ('user_get',),),
         ]
 
 
