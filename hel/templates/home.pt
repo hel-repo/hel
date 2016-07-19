@@ -68,7 +68,6 @@
 
               <div id="register-form" tal:condition="not logged_in" class="js-hide-on-load">
                 <form class="form-signin form-horizontal" method="post">
-                  <!-- TODO: move styles to css file -->
                   <label for="reg-nickname" class="sr-only">Nickname</label>
                   <div class="col-sm-2" style="padding-left: 0px;">
                     <input name="nickname" type="text" id="reg-nickname" class="form-control input-lg" placeholder="Nickname" value="${nickname}" required>
@@ -120,7 +119,7 @@
           <div class="row red">
             <div class="links">
               <ul>
-                <li class="current-version">v 0.3.0</li>
+                <li class="current-version">v 0.3.2</li>
                 <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/hel-repo/hel/wiki">Docs</a></li>
                 <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/hel-repo/hel">Github Project</a></li>
                 <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="http://webchat.esper.net/?channels=#cc.ru">IRC Channel</a></li>

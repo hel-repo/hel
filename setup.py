@@ -26,7 +26,7 @@ tests_require = [
 ]
 
 setup(name='hel',
-      version='0.3.1',
+      version='0.3.2',
       description='OpenComputers package repository',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
