@@ -1,3 +1,11 @@
+0.3.2
+-----
+- Added versions.num.changes field.
+
+0.3.1
+-----
+- Minor updates.
+
 0.3.0
 -----
 - Wrappers for the remaining views.
