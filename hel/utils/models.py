@@ -57,7 +57,8 @@ class ModelPackage:
                         }
                     data[str(semver.Version.coerce(str(ver)))] = {
                         'files': files,
-                        'depends': dependencies
+                        'depends': dependencies,
+                        'changes': value['changes']
                     }
                 self.data[k] = data
             elif k == 'screenshots':

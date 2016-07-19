@@ -196,7 +196,9 @@ def update_package(context, request):
                         ver, dict,
                         Messages.type_mismatch % ('version_info', 'dict',))
                     if num not in old['versions']:
-                        if 'depends' not in ver or 'files' not in ver:
+                        if ('depends' not in ver or
+                                'files' not in ver or
+                                'changes' not in ver):
                             jexc(HTTPBadRequest, Messages.partial_ver)
                     if 'files' in ver:
                         check(
@@ -304,6 +306,14 @@ def update_package(context, request):
                                 if 'type' in dep_info:
                                     (query[k][num]['depends']
                                      [dep_name]['type']) = dep_info['type']
+                    if 'changes' in ver:
+                        check(ver['changes'], str,
+                              Messages.type_mismatch % ('changes', 'str',))
+                        if k not in query:
+                            query[k] = {}
+                        if num not in query[k]:
+                            query[k][num] = {}
+                        query[k][num]['changes'] = ver['changes']
         elif k == 'screenshots':
             check(v, dict, Messages.type_mismatch % (k, 'dict',))
             for url, desc in v.items():
