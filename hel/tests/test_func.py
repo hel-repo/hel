@@ -726,7 +726,9 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                             'http://example.com/file42': {
                                 'dir': '/test'
                             }
-                        }
+                        },
+                        'depends': {},
+                        'changes': ''
                     }
                 }
             }, headers=self.auth_headers, status=400)
@@ -765,11 +767,32 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                             'dpackage-42': {
                                 'version': '*'
                             }
-                        }
+                        },
+                        'changes': ''
                     }
                 }
             }, headers=self.auth_headers, status=400)
         self.assertEqual(Messages.partial_ver, res.json['message'])
+
+    def test_upd_pkg_ver_v_chgs_bad(self):
+        res = self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.0.0': {
+                        'changes': ['o', 'h', 'a', 'i']
+                    }
+                }
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.type_mismatch % ('changes', 'str',),
+                         res.json['message'])
+
+    def test_upd_pkg_ver_v_chgs(self):
+        self.test_app.patch_json('/packages/package-2', {
+                'versions': {
+                    '1.0.2': {
+                        'changes': ':)'
+                    }
+                }
+            }, headers=self.auth_headers, status=204)
 
     def test_upd_pkg_scr_dict(self):
         res = self.test_app.patch_json('/packages/package-1', {

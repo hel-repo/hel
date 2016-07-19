@@ -38,7 +38,8 @@ pkg1 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 13.'
         },
         '1.1.0': {
             'files': {
@@ -68,7 +69,8 @@ pkg1 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 12.'
         },
         '1.0.0': {
             'files': {
@@ -98,7 +100,8 @@ pkg1 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 11.'
         }
     },
     screenshots={
@@ -145,7 +148,8 @@ pkg2 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 23.'
         },
         '1.0.1': {
             'files': {
@@ -175,7 +179,8 @@ pkg2 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 22.'
         },
         '1.0.0': {
             'files': {
@@ -205,7 +210,8 @@ pkg2 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 21.'
         }
     },
     screenshots={
@@ -252,7 +258,8 @@ pkg3 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 33.'
         },
         '1.1.0': {
             'files': {
@@ -282,7 +289,8 @@ pkg3 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 32.'
         },
         '1.0.0': {
             'files': {
@@ -312,7 +320,8 @@ pkg3 = ModelPackage(
                     'version': '*',
                     'type': 'recommended'
                 }
-            }
+            },
+            'changes': 'Change 31.'
         }
     },
     screenshots={
