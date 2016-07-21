@@ -119,7 +119,7 @@
           <div class="row red">
             <div class="links">
               <ul>
-                <li class="current-version">v 0.3.2</li>
+                <li class="current-version">v ${version}</li>
                 <li><i class="glyphicon glyphicon-bookmark icon-muted"></i><a href="https://github.com/hel-repo/hel/wiki">Docs</a></li>
                 <li><i class="glyphicon glyphicon-cog icon-muted"></i><a href="https://github.com/hel-repo/hel">Github Project</a></li>
                 <li><i class="glyphicon glyphicon-globe icon-muted"></i><a href="http://webchat.esper.net/?channels=#cc.ru">IRC Channel</a></li>

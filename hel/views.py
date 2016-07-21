@@ -42,6 +42,8 @@ def home(request):
     passwd_confirm = ''
     if not hasattr(request, 'logged_in'):
         request.logged_in = False
+    if not hasattr(request, 'version'):
+        request.version = '?'
     if request.logged_in:
         nickname = request.authenticated_userid
         if 'log-out' in request.POST:
@@ -137,7 +139,8 @@ def home(request):
         'message': message,
         'nickname': nickname,
         'email': email,
-        'logged_in': request.logged_in
+        'logged_in': request.logged_in,
+        'version': request.version
     }
 
 
