@@ -1,18 +1,18 @@
+# Only standard libraries at the top, as this file also gets loaded by
+# the setup script. At such moment, e.g., pyramid doesn't exist,
+# and will cause a crash of installation.
+
+# All needed libraries must be at the top of *function*
+# which requires them.
+
+# In exchange, you now only need to change a single line
+# to bump the version.
+
 import json
 import logging
 import os
 
-from pyramid.authorization import ACLAuthorizationPolicy
-from pyramid.config import Configurator
-from pymongo import MongoClient
-from bson import json_util
-
-from hel.resources import Root
-from hel.utils.authentication import (
-    HELAuthenticationPolicy,
-    get_user,
-    is_logged_in
-)
+from hel.utils import VERSION
 
 
 log = logging.getLogger(__name__)
@@ -23,6 +23,7 @@ class MongoJSONRenderer:
         pass
 
     def __call__(self, value, system):
+        from bson import json_util
         request = system.get('request')
         if request is not None:
             if not hasattr(request, 'response_content_type'):
@@ -33,6 +34,16 @@ class MongoJSONRenderer:
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+    from pymongo import MongoClient
+    from pyramid.authorization import ACLAuthorizationPolicy
+    from pyramid.config import Configurator
+
+    from hel.resources import Root
+    from hel.utils.authentication import (
+        HELAuthenticationPolicy,
+        get_user,
+        is_logged_in
+    )
 
     # Auth
     auth_secret = "巏⇟ू攛劈ᜤ漢࿅䓽奧䬙摀曇䰤䙙൪ᴹ喼唣壆"
@@ -70,6 +81,10 @@ def main(global_config, **settings):
     def add_db(request):
         return config.registry.mongo.hel
     config.add_request_method(add_db, 'db', reify=True)
+
+    def get_version(request):
+        return VERSION
+    config.add_request_method(get_version, 'version', reify=True)
 
     # Auth again
     config.add_request_method(get_user, 'user', reify=True)

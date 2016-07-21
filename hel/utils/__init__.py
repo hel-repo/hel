@@ -1,6 +1,9 @@
 import json
 
 
+VERSION = '0.3.2'
+
+
 def parse_search_phrase(s):
     result = []
     quote = ''

@@ -1,5 +1,6 @@
 import os
 
+from hel.utils import VERSION
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -26,7 +27,7 @@ tests_require = [
 ]
 
 setup(name='hel',
-      version='0.3.2',
+      version=VERSION,
       description='OpenComputers package repository',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
