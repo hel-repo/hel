@@ -21,8 +21,8 @@ class HELAuthenticationPolicy(Policy):
             principals += ['~' + x for x in user['groups']]
             if 'act_till' not in user and 'act_phrase' not in user:
                 principals += ['activated']
-        elif hasattr(request, 'no_permission_check') \
-                and request.no_permission_check:
+        elif (hasattr(request, 'no_permission_check')
+                and request.no_permission_check):
             principals += ['~allperms']
         return principals
 
