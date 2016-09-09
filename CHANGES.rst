@@ -1,3 +1,7 @@
+0.4.0
+-----
+- Separated the auth logic from the home view, effectively enabling authorization via API.
+
 0.3.2
 -----
 - Added versions.num.changes field.

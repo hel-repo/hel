@@ -12,21 +12,6 @@ from hel.utils.tests import sample_packages as s_pkgs, are_equal
 from hel.utils.query import PackagesSearcher
 
 
-class ViewTests(unittest.TestCase):
-
-    def setUp(self):
-        self.config = testing.setUp()
-
-    def tearDown(self):
-        testing.tearDown()
-
-    def test_view_home(self):
-        from hel.views import home
-        request = testing.DummyRequest()
-        info = home(request)
-        self.assertEqual(info['project'], 'hel')
-
-
 def one_value_param(name):
 
     def wrap(func):

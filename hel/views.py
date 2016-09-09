@@ -7,7 +7,6 @@ import os
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPConflict,
-    HTTPFound,
     HTTPNotFound
 )
 from pyramid.request import Request
@@ -15,6 +14,7 @@ from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config
 import semantic_version as semver
+from webob.headers import ResponseHeaders
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils import jexc
@@ -32,23 +32,58 @@ from hel.utils.query import (
 log = logging.getLogger(__name__)
 
 
-# Home page
+# Home
 @view_config(route_name='home', renderer='templates/home.pt')
 def home(request):
+    message = ''
+    nickname = ''
+    email = ''
+    if request.authenticated_userid:
+        nickname = request.authenticated_userid
+    if any(x in ['log-out', 'log-in', 'register'] for x in request.POST):
+        subrequest = Request.blank(
+            '/auth', method='POST', POST=request.POST)
+        if hasattr(request, 'logged_in'):
+            subrequest.logged_in = request.logged_in
+        response = request.invoke_subrequest(subrequest, use_tweens=True)
+        request.response.headers = response.headers
+        cookie_headers = ResponseHeaders()
+        for k, v in response.headers.items():
+            if k.lower() == 'set-cookie':
+                cookie_headers.add('Cookie', v)
+        message = response.json['message']
+        if not nickname and 'nickname' in request.POST:
+            nickname = request.POST['nickname'].strip()
+        if 'email' in request.POST:
+            email = request.POST['email'].strip()
+    request.response.content_type = 'text/html'
+    return {
+        'project': 'hel',
+        'message': message,
+        'nickname': nickname,
+        'email': email,
+        'logged_in': request.logged_in,
+        'version': request.version
+    }
+
+
+# Auth controller
+@view_config(route_name='auth', renderer='json')
+def auth(request):
     message = ''
     nickname = ''
     password = ''
     email = ''
     passwd_confirm = ''
-    if not hasattr(request, 'logged_in'):
-        request.logged_in = False
-    if not hasattr(request, 'version'):
-        request.version = '?'
+    request.response.content_type = 'application/json'
     if request.logged_in:
         nickname = request.authenticated_userid
         if 'log-out' in request.POST:
             headers = forget(request)
-            return HTTPFound(location=request.url, headers=headers)
+            request.response.status = '200 OK'
+            for v in headers:
+                request.response.headers.add(v[0], v[1])
+            return {'success': True, 'message': Messages.logged_out}
     elif 'log-in' in request.POST:
         try:
             nickname = request.POST['nickname'].strip()
@@ -67,9 +102,10 @@ def home(request):
                     correct_hash = user['password']
                     if pass_hash == correct_hash:
                         headers = remember(request, nickname)
-                        response = HTTPFound(location=request.url,
-                                             headers=headers)
-                        return response
+                        request.response.status = '200 OK'
+                        for v in headers:
+                            request.response.headers.add(v[0], v[1])
+                        return {'success': True, 'message': Messages.logged_in}
                     else:
                         message = Messages.failed_login
                 else:
@@ -122,7 +158,10 @@ def home(request):
                                 subrequest, use_tweens=True)
                             if response.status_code == 201:
                                 # TODO: send activation email
-                                message = Messages.account_created_success
+                                request.response.status = '200 OK'
+                                return {'success': True,
+                                        'message':
+                                            Messages.account_created_success}
                             else:  # pragma: no cover
                                 message = Messages.internal_error
                                 log.error(
@@ -133,14 +172,9 @@ def home(request):
                                     ''.join(['\n * ' + str(x) + ' = ' + str(y)
                                              for x, y in locals().items()])
                                 )
-    request.response.content_type = 'text/html'
     return {
-        'project': 'hel',
-        'message': message,
-        'nickname': nickname,
-        'email': email,
-        'logged_in': request.logged_in,
-        'version': request.version
+        'success': False,
+        'message': message
     }
 
 

@@ -20,3 +20,5 @@ class Messages:
     bad_user = 'This user data you provided contained an error.'
     wrong_dep_type = 'Unknown dependency type.'
     partial_ver = 'Version data you provided was partial.'
+    logged_out = 'Logged out successfully.'
+    logged_in = 'Logged in successfully.'
