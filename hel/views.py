@@ -76,10 +76,6 @@ def auth(request):
     email = ''
     passwd_confirm = ''
     request.response.content_type = 'application/json'
-    if not hasattr(request, 'logged_in'):
-        request.logged_in = False
-    if not hasattr(request, 'version'):
-        request.version = '?'
     if request.logged_in:
         nickname = request.authenticated_userid
         if 'log-out' in request.POST:
