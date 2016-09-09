@@ -138,9 +138,10 @@ def auth(request):
                         if password != passwd_confirm:
                             message = Messages.password_mismatch
                         else:
-                            act_phrase = os.urandom(
-                                request.registry.settings
-                                ['activation.length']).hex()
+                            act_phrase = ''.join(
+                                '{:02x}'.format(x) for x in os.urandom(
+                                    request.registry.settings
+                                    ['activation.length']))
                             act_till = (datetime.datetime.now() +
                                         datetime.timedelta(
                                             seconds=request.registry.settings
