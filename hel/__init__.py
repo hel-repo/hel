@@ -31,12 +31,22 @@ class MongoJSONRenderer:
         return json.dumps(value, default=json_util.default)
 
 
+# http://stackoverflow.com/a/22862087/5675159
+def add_cors_hdrs_callback(event):
+    def cors_hdrs(request, response):
+        response.headers.extend((
+            ('Access-Control-Allow-Origin', '*',),
+        ))
+    event.request.add_response_callback(cors_hdrs)
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     from pymongo import MongoClient
     from pyramid.authorization import ACLAuthorizationPolicy
     from pyramid.config import Configurator
+    from pyramid.events import NewRequest
 
     from hel.resources import Root
     from hel.utils.authentication import (
@@ -69,6 +79,9 @@ def main(global_config, **settings):
     config.include('pyramid_chameleon')
     config.add_renderer('json', MongoJSONRenderer)
     config.add_static_view('static', 'static', cache_max_age=3600)
+
+    # Set listeners
+    config.add_subscriber(add_cors_hdrs_callback, NewRequest)
 
     # Setup MongoDB
     url = 'mongodb://localhost:27017/'

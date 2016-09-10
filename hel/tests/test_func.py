@@ -167,6 +167,11 @@ class FunctionalTests(unittest.TestCase):
     def test_teapot(self):
         self.test_app.post('/teapot', status=418)
 
+    def test_cors_headers(self):
+        res = self.test_app.post('/', status=200)
+        self.assertTrue(any(v[0] == 'Access-Control-Allow-Origin' and
+                            v[1] == '*' for v in res.headerlist))
+
 
 class FunctionalAuthTests(unittest.TestCase):
 
@@ -209,7 +214,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertEqual(users[0]['nickname'], data['nickname'])
         data = copy.copy(self.user)
         data['log-in'] = True
-        res = self.test_app.post('/', data, status=200)
+        res = self.test_app.post('/', data, status=302)
         headers = res.headers
         auth_headers = ResponseHeaders()
         for k, v in headers.items():
@@ -228,7 +233,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertIsNotNone(logout)
         self.assertEqual(logout.form.span.span.string, '@' +
                          self.user['nickname'])
-        self.log_out_status = 200
+        self.log_out_status = 302
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)

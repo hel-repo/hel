@@ -7,6 +7,7 @@ import os
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPConflict,
+    HTTPFound,
     HTTPNotFound
 )
 from pyramid.request import Request
@@ -50,12 +51,16 @@ def home(request):
         cookie_headers = ResponseHeaders()
         for k, v in response.headers.items():
             if k.lower() == 'set-cookie':
-                cookie_headers.add('Cookie', v)
+                cookie_headers.add('Set-Cookie', v)
         message = response.json['message']
         if not nickname and 'nickname' in request.POST:
             nickname = request.POST['nickname'].strip()
         if 'email' in request.POST:
             email = request.POST['email'].strip()
+
+        if (response.json['success'] and
+                any(x in ['log-out', 'log-in'] for x in request.POST)):
+            return HTTPFound(location=request.url, headers=cookie_headers)
     request.response.content_type = 'text/html'
     return {
         'project': 'hel',

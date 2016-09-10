@@ -1,3 +1,8 @@
+0.4.1
+-----
+- Added ``Access-Control-Allow-Origin`` header for cross-origin AJAX API requests.
+- Fixed strange log in and log out behaviours.
+
 0.4.0
 -----
 - Separated the auth logic from the home view, effectively enabling authorization via API.
