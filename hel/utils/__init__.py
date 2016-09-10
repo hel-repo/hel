@@ -35,7 +35,8 @@ def jexc(http_exc, info=None):
     data = {
         'message': info,
         'code': http_exc.code,
-        'title': http_exc.title
+        'title': http_exc.title,
+        'success': False
     }
     e = http_exc()
     e.content_type = 'application/json'
