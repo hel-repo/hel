@@ -167,6 +167,11 @@ class FunctionalTests(unittest.TestCase):
     def test_teapot(self):
         self.test_app.post('/teapot', status=418)
 
+    def test_cors_headers(self):
+        res = self.test_app.post('/', status=200)
+        self.assertTrue(any(v[0] == 'Access-Control-Allow-Origin' and
+                            v[1] == '*' for v in res.headerlist))
+
 
 class FunctionalAuthTests(unittest.TestCase):
 
