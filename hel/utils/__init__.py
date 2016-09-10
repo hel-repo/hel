@@ -1,7 +1,7 @@
 import json
 
 
-VERSION = '0.4.0'
+VERSION = '0.4.1'
 
 
 def parse_search_phrase(s):
