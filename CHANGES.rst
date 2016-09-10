@@ -1,3 +1,8 @@
+0.5.0
+-----
+- Changed the replacement character. This breaks existing packages.
+- Made error messages unified.
+
 0.4.1
 -----
 - Added ``Access-Control-Allow-Origin`` header for cross-origin AJAX API requests.

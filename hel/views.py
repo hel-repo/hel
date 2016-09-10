@@ -110,7 +110,10 @@ def auth(request):
                         request.response.status = '200 OK'
                         for v in headers:
                             request.response.headers.add(v[0], v[1])
-                        return {'success': True, 'message': Messages.logged_in}
+                        return {'message': Messages.logged_in,
+                                'code': 200,
+                                'title': 'OK',
+                                'success': True}
                     else:
                         message = Messages.failed_login
                 else:
@@ -165,9 +168,11 @@ def auth(request):
                             if response.status_code == 201:
                                 # TODO: send activation email
                                 request.response.status = '200 OK'
-                                return {'success': True,
-                                        'message':
-                                            Messages.account_created_success}
+                                return {'message':
+                                        Messages.account_created_success,
+                                        'code': 200,
+                                        'title': 'OK',
+                                        'success': True}
                             else:  # pragma: no cover
                                 message = Messages.internal_error
                                 log.error(
@@ -178,10 +183,7 @@ def auth(request):
                                     ''.join(['\n * ' + str(x) + ' = ' + str(y)
                                              for x, y in locals().items()])
                                 )
-    return {
-        'success': False,
-        'message': message
-    }
+    jexc(HTTPBadRequest, message)
 
 
 # Someone requested this
