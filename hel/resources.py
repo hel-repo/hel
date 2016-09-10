@@ -5,21 +5,10 @@ from pyramid.traversal import find_root
 
 class Resource(dict):
 
-    acl = []
-
     def __init__(self, ref, parent, **kwargs):
         super().__init__(**kwargs)
         self.__name__ = ref
         self.__parent__ = parent
-        self.acl += [
-            (Allow, '~admins', ALL_PERMISSIONS,),
-            (Allow, '~system', ALL_PERMISSIONS,),
-            (Allow, '~allperms', ALL_PERMISSIONS,),
-            (Allow, Everyone, 'pkg_view',),
-            (Allow, Everyone, 'pkgs_view',),
-            (Allow, Authenticated, 'pkg_create',),  # TODO: Activated only
-            (Allow, Everyone, 'user_list',)
-        ]
 
     def __repr__(self):
         # use standard object representation (not dict's)
@@ -29,8 +18,17 @@ class Resource(dict):
         resource = klass(ref=ref, parent=self)
         self[ref] = resource
 
-    def __acl__(self):
-        return self.acl
+    @classmethod
+    def __acl__(cls):
+        return [
+            (Allow, '~admins', ALL_PERMISSIONS,),
+            (Allow, '~system', ALL_PERMISSIONS,),
+            (Allow, '~allperms', ALL_PERMISSIONS,),
+            (Allow, Everyone, 'pkg_view',),
+            (Allow, Everyone, 'pkgs_view',),
+            (Allow, Authenticated, 'pkg_create',),  # TODO: Activated only
+            (Allow, Everyone, 'user_list',)
+        ]
 
 
 class MongoCollection(Resource):
@@ -96,7 +94,7 @@ class Package(MongoDocument):
         return self.owner
 
     def __acl__(self):
-        data = self.acl
+        data = super().__acl__()
         if self.owner:
             data += [(Allow, self.owner, ('pkg_delete', 'pkg_update',),)]
         return data
@@ -118,7 +116,7 @@ class User(MongoDocument):
         self.spec = {'nickname': ref}
 
     def __acl__(self):
-        return self.acl + [
+        return super().__acl__() + [
             (Allow, '@' + self.spec['nickname'], ('user_get',),),
         ]
 
@@ -130,9 +128,6 @@ class Users(MongoCollection):
 
     def __getitem__(self, ref):
         return User(ref, self)
-
-    def __acl__(self):
-        return self.acl
 
 
 class Root(Resource):
