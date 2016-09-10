@@ -58,4 +58,3 @@ class UnitTests(unittest.TestCase):
         from hel.utils.tests import are_equal
         self.assertEqual(Resource.__repr__(Resource),
                          object.__repr__(Resource))
-        self.assertTrue(are_equal(Resource.__acl__(Resource), Resource.acl))
