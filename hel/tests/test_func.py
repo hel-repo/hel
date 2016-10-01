@@ -430,6 +430,12 @@ class FunctionalTestsWithPkg(unittest.TestCase):
     def test_create_packages_success(self):
         pass
 
+    def test_stats_views_increment(self):
+        for i in range(3):
+            self.test_app.get('/packages/package-2', status=200)
+        res = self.test_app.get('/packages/package-2', status=200)
+        self.assertEqual(res.json['stats']['views'], 3)
+
     def test_upd_pkg_name_conflict(self):
         res = self.test_app.patch_json('/packages/package-1', {
                 'name': 'package-1'
