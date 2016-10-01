@@ -1,3 +1,7 @@
+0.6.0
+-----
+- Add the ``stats.views`` field. *This breaks existing packages*.
+
 0.5.0
 -----
 - Changed the replacement character. This breaks existing packages.
