@@ -19,7 +19,11 @@ class ModelPackage:
             'license': '',
             'tags': [],
             'versions': {},
-            'screenshots': {}
+            'screenshots': {},
+            'stats': {
+                'downloads': 0,
+                'views': 0
+            }
         }
 
         if strict:
@@ -66,6 +70,10 @@ class ModelPackage:
                                 for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
+            elif k == 'stats':
+                for stat_name, value in v.items():
+                    if stat_name in ['downloads', 'views']:
+                        self.data[k][stat_name] = int(value)
 
     @property
     def json(self):

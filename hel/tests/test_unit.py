@@ -55,6 +55,5 @@ class UnitTests(unittest.TestCase):
 
     def test_resource(self):
         from hel.resources import Resource
-        from hel.utils.tests import are_equal
         self.assertEqual(Resource.__repr__(Resource),
                          object.__repr__(Resource))

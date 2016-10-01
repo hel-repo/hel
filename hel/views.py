@@ -407,6 +407,11 @@ def get_package(context, request):
     if r is None:
         jexc(HTTPNotFound)
     else:
+        context.update({
+            '$set': {
+                'stats.views': r['stats']['views'] + 1
+            }
+        })
         del r['_id']
         request.response.content_type = 'application/json'
         return replace_chars_in_keys(r, Constants.key_replace_char, '.')
