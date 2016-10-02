@@ -168,13 +168,13 @@ class FunctionalTests(unittest.TestCase):
         res = self.test_app.post_json('/auth', {
             'oh': 'well'
         }, status=400)
-        self.assertEqual(res.json['info'], Messages.bad_request)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_bad_json_auth(self):
         res = self.test_app.post('/auth', """hey there
             'oh': 'well'
         },""", status=400)
-        self.assertEqual(res.json['info'], Messages.bad_request)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_teapot(self):
         self.test_app.post('/teapot', status=418)
