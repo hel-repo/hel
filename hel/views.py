@@ -1,6 +1,7 @@
 import copy
 import datetime
 import hashlib
+import json
 import logging
 import os
 
@@ -42,8 +43,15 @@ def home(request):
     if request.authenticated_userid:
         nickname = request.authenticated_userid
     if any(x in ['log-out', 'log-in', 'register'] for x in request.POST):
+        data = {}
+        for k, v in request.POST.items():
+            if k not in ['log-out', 'log-in', 'register']:
+                data[k] = v
+            else:
+                data['action'] = k
         subrequest = Request.blank(
-            '/auth', method='POST', POST=request.POST)
+            '/auth', method='POST', POST=json.dumps(data),
+            content_type='application/json')
         if hasattr(request, 'logged_in'):
             subrequest.logged_in = request.logged_in
         response = request.invoke_subrequest(subrequest, use_tweens=True)
@@ -81,18 +89,23 @@ def auth(request):
     email = ''
     passwd_confirm = ''
     request.response.content_type = 'application/json'
-    if request.logged_in:
+    print(request.body)
+    params = request.json_body
+    print(params)
+    if 'action' not in params:
+        message = Messages.bad_request
+    elif request.logged_in:
         nickname = request.authenticated_userid
-        if 'log-out' in request.POST:
+        if params['action'] == 'log-out':
             headers = forget(request)
             request.response.status = '200 OK'
             for v in headers:
                 request.response.headers.add(v[0], v[1])
             return {'success': True, 'message': Messages.logged_out}
-    elif 'log-in' in request.POST:
+    elif params['action'] == 'log-in':
         try:
-            nickname = request.POST['nickname'].strip()
-            password = request.POST['password'].strip()
+            nickname = params['nickname'].strip()
+            password = params['password'].strip()
         except KeyError:
             message = Messages.bad_request
         else:
@@ -118,12 +131,12 @@ def auth(request):
                         message = Messages.failed_login
                 else:
                     message = Messages.failed_login
-    elif 'register' in request.POST:
+    elif params['action'] == 'register':
         try:
-            nickname = request.POST['nickname'].strip()
-            email = request.POST['email'].strip()
-            password = request.POST['password'].strip()
-            passwd_confirm = request.POST['passwd-confirm'].strip()
+            nickname = params['nickname'].strip()
+            email = params['email'].strip()
+            password = params['password'].strip()
+            passwd_confirm = params['passwd-confirm'].strip()
         except (KeyError, AttributeError):
             message = Messages.bad_request
         else:
