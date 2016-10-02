@@ -409,8 +409,7 @@ def get_package(context, request):
     else:
         context.update({
             '$inc': {
-                'stats.views': 0,
-                'stats.downloads': 0
+                'stats.views': 1
             }
         })
         del r['_id']
