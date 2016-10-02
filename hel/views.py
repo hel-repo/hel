@@ -408,8 +408,8 @@ def get_package(context, request):
         jexc(HTTPNotFound)
     else:
         context.update({
-            '$set': {
-                'stats.views': r['stats']['views'] + 1
+            '$inc': {
+                'stats.views': 1
             }
         })
         del r['_id']
