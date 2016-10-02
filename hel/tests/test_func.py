@@ -164,6 +164,18 @@ class FunctionalTests(unittest.TestCase):
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0]['nickname'], data['nickname'])
 
+    def test_no_action_auth(self):
+        res = self.test_app.post_json('/auth', {
+            'oh': 'well'
+        }, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
+
+    def test_bad_json_auth(self):
+        res = self.test_app.post('/auth', """hey there
+            'oh': 'well'
+        },""", status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
+
     def test_teapot(self):
         self.test_app.post('/teapot', status=418)
 

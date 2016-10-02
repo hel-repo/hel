@@ -1,3 +1,7 @@
+0.7.0
+-----
+- Made the /auth view process ``application/json`` instead of ``application/x-www-form-urlencoded`` (that was illogical).
+
 0.6.1
 -----
 - Made the previous change not breaking.
