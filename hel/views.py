@@ -89,9 +89,11 @@ def auth(request):
     email = ''
     passwd_confirm = ''
     request.response.content_type = 'application/json'
-    print(request.body)
-    params = request.json_body
-    print(params)
+    try:
+        params = request.json_body
+    except:
+        message = Messages.bad_request
+        jexc(HTTPBadRequest, message)
     if 'action' not in params:
         message = Messages.bad_request
     elif request.logged_in:
