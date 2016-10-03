@@ -80,10 +80,6 @@
                   <div class="col-sm-2" style="padding-left: 0px;">
                     <input name="password" type="password" id="reg-email" class="form-control input-lg" placeholder="Password" required>
                   </div>
-                  <label for="reg-passwd-confirm" class="sr-only">Password confirmation</label>
-                  <div class="col-sm-2" style="padding-left: 0px;">
-                    <input name="passwd-confirm" type="password" id="reg-email" class="form-control input-lg" placeholder="Password confirmation" required>
-                  </div>
                   <button name="register" type="submit" class="btn btn-lg btn-danger">Register</button>
                   <button class="btn btn-lg" onclick="switchTo('main')">Back</button>
                 </form>

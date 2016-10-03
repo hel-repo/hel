@@ -138,7 +138,6 @@ def auth(request):
             nickname = params['nickname'].strip()
             email = params['email'].strip()
             password = params['password'].strip()
-            passwd_confirm = params['passwd-confirm'].strip()
         except (KeyError, AttributeError):
             message = Messages.bad_request
         else:
@@ -158,46 +157,43 @@ def auth(request):
                     if user:
                         message = Messages.email_in_use
                     else:
-                        if password != passwd_confirm:
-                            message = Messages.password_mismatch
-                        else:
-                            act_phrase = ''.join(
-                                '{:02x}'.format(x) for x in os.urandom(
-                                    request.registry.settings
-                                    ['activation.length']))
-                            act_till = (datetime.datetime.now() +
-                                        datetime.timedelta(
-                                            seconds=request.registry.settings
-                                            ['activation.time']))
-                            subrequest = Request.blank(
-                                '/users', method='POST', POST=(
-                                    str(ModelUser(nickname=nickname,
-                                                  email=email,
-                                                  password=pass_hash,
-                                                  activation_phrase=act_phrase,
-                                                  activation_till=act_till))),
-                                content_type='application/json')
-                            subrequest.no_permission_check = True
-                            response = request.invoke_subrequest(
-                                subrequest, use_tweens=True)
-                            if response.status_code == 201:
-                                # TODO: send activation email
-                                request.response.status = '200 OK'
-                                return {'message':
-                                        Messages.account_created_success,
-                                        'code': 200,
-                                        'title': 'OK',
-                                        'success': True}
-                            else:  # pragma: no cover
-                                message = Messages.internal_error
-                                log.error(
-                                    'Could not create a user: subrequest'
-                                    ' returned with status code %s!\n'
-                                    'Local variables in frame:%s',
-                                    response.status_code,
-                                    ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                                             for x, y in locals().items()])
-                                )
+                        act_phrase = ''.join(
+                            '{:02x}'.format(x) for x in os.urandom(
+                                request.registry.settings
+                                ['activation.length']))
+                        act_till = (datetime.datetime.now() +
+                                    datetime.timedelta(
+                                        seconds=request.registry.settings
+                                        ['activation.time']))
+                        subrequest = Request.blank(
+                            '/users', method='POST', POST=(
+                                str(ModelUser(nickname=nickname,
+                                              email=email,
+                                              password=pass_hash,
+                                              activation_phrase=act_phrase,
+                                              activation_till=act_till))),
+                            content_type='application/json')
+                        subrequest.no_permission_check = True
+                        response = request.invoke_subrequest(
+                            subrequest, use_tweens=True)
+                        if response.status_code == 201:
+                            # TODO: send activation email
+                            request.response.status = '200 OK'
+                            return {'message':
+                                    Messages.account_created_success,
+                                    'code': 200,
+                                    'title': 'OK',
+                                    'success': True}
+                        else:  # pragma: no cover
+                            message = Messages.internal_error
+                            log.error(
+                                'Could not create a user: subrequest'
+                                ' returned with status code %s!\n'
+                                'Local variables in frame:%s',
+                                response.status_code,
+                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                                         for x, y in locals().items()])
+                            )
     jexc(HTTPBadRequest, message)
 
 
@@ -440,8 +436,7 @@ def delete_package(context, request):
     context.delete()
 
     return Response(
-        status='204 No Content',
-        content_type='application/json')
+        status='204 No Content')
 
 
 @view_config(request_method='POST',
