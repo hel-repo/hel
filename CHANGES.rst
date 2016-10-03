@@ -1,3 +1,7 @@
+0.7.1
+-----
+- Removed ``passwd-confirm`` param.
+
 0.7.0
 -----
 - Made the /auth view process ``application/json`` instead of ``application/x-www-form-urlencoded`` (that was illogical).
