@@ -97,7 +97,6 @@ class FunctionalTests(unittest.TestCase):
         res = self.test_app.post('/', {
                 'email': '',
                 'nickname': '',
-                'passwd-confirm': '',
                 'register': True
             }, status=200)
         message = res.html.find(id='login-message')
@@ -109,7 +108,6 @@ class FunctionalTests(unittest.TestCase):
                 'email': '',
                 'nickname': '',
                 'password': '',
-                'passwd-confirm': '',
                 'register': True
             }, status=200)
         message = res.html.find(id='login-message')
@@ -121,7 +119,6 @@ class FunctionalTests(unittest.TestCase):
                 'email': '',
                 'nickname': self.user['nickname'],
                 'password': '',
-                'passwd-confirm': '',
                 'register': True
             }, status=200)
         message = res.html.find(id='login-message')
@@ -133,27 +130,24 @@ class FunctionalTests(unittest.TestCase):
                 'email': self.user['email'],
                 'nickname': self.user['nickname'],
                 'password': '',
-                'passwd-confirm': '',
                 'register': True
             }, status=200)
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.empty_password)
 
-    def test_failed_reg_nick_use(self):
-        data = copy.copy(self.user)
-        data['register'] = True
-        data['passwd-confirm'] = 'hi'
-        res = self.test_app.post('/', data, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.password_mismatch)
+    # def test_failed_reg_nick_use(self):
+    #     data = copy.copy(self.user)
+    #     data['register'] = True
+    #     res = self.test_app.post('/', data, status=200)
+    #     self.assertIsNone(res.html.find(id='log-out'))
+    #     message = res.html.find(id='login-message')
+    #     self.assertIsNotNone(message)
+    #     self.assertEqual(message.string, Messages.password_mismatch)
 
     def test_reg_success(self):
         data = copy.copy(self.user)
         data['register'] = True
-        data['passwd-confirm'] = data['password']
         res = self.test_app.post('/', data, status=200)
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
@@ -214,7 +208,6 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         FunctionalAuthTests.setUp(self)
         data = copy.copy(self.user)
         data['register'] = True
-        data['passwd-confirm'] = data['password']
         res = self.test_app.post('/', data, status=200)
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
@@ -333,7 +326,6 @@ class FunctionalTestsWithReg(unittest.TestCase):
         FunctionalAuthTests.setUp(self)
         data = copy.copy(self.user)
         data['register'] = True
-        data['passwd-confirm'] = data['password']
         res = self.test_app.post('/', data, status=200)
         message = res.html.find(id='login-message')
         self.assertIsNotNone(message)
@@ -349,7 +341,6 @@ class FunctionalTestsWithReg(unittest.TestCase):
                 'nickname': 'root',
                 'email': 'asd',
                 'password': '...',
-                'passwd-confirm': '...',
                 'register': True
             }, status=200)
         self.assertIsNone(res.html.find(id='log-out'))
@@ -362,7 +353,6 @@ class FunctionalTestsWithReg(unittest.TestCase):
                 'nickname': 'root2',
                 'email': 'root@your.pc',
                 'password': '...',
-                'passwd-confirm': '...',
                 'register': True
             }, status=200)
         self.assertIsNone(res.html.find(id='log-out'))
