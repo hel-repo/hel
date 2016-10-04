@@ -4,7 +4,7 @@ import semantic_version as semver
 
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
-from hel.utils.query import replace_chars_in_keys
+from hel.utils.query import replace_chars_in_keys, parse_url
 
 
 class ModelPackage:
@@ -41,7 +41,8 @@ class ModelPackage:
                 data = {}
                 for ver, value in v.items():
                     files = {}
-                    for file_url, f in value['files'].items():
+                    for file_url_unchecked, f in value['files'].items():
+                        file_url = parse_url(file_url_unchecked)
                         files[str(file_url)] = {
                             'dir': str(f['dir']),
                             'name': str(f['name'])
@@ -66,7 +67,7 @@ class ModelPackage:
                     }
                 self.data[k] = data
             elif k == 'screenshots':
-                self.data[k] = {str(url): str(desc)
+                self.data[k] = {parse_url(str(url)): str(desc)
                                 for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
