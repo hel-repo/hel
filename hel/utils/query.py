@@ -316,5 +316,5 @@ def parse_url(url):
     if matches['scheme'] not in ['http', 'https']:
         jexc(HTTPBadRequest, Messages.invalid_uri)
     matches['path'] = matches['path'] or '/'
-    matches['fragment'] = ''
+    matches['fragment'] = None
     return rfc3987.compose(**matches)
