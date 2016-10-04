@@ -450,6 +450,8 @@ def create_package(context, request):
         pkg = ModelPackage(True, **request.json_body)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
         jexc(HTTPBadRequest, Messages.bad_package % str(e))
+    except HTTPBadRequest:
+        raise
     except Exception as e:  # pragma: no cover
         log.warn('Exception caught in create_package: %r.', e)
         jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
