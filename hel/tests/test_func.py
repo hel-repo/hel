@@ -400,7 +400,7 @@ class FunctionalTestsWithReg(unittest.TestCase):
         self.assertNotIn('password', data[0])
 
     def test_invalid_url(self):
-        data = copy.deepcopy(s_pkgs.pkg1).json()
+        data = copy.deepcopy(s_pkgs.pkg1).data
         data['screenshots']['example.com/hey'] = "Oh, I'm missing the scheme!"
         data['name'] = 'package-missing-scheme'
         res = self.test_app.post_json('/packages', data,
@@ -408,7 +408,7 @@ class FunctionalTestsWithReg(unittest.TestCase):
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
     def test_invalid_scheme(self):
-        data = copy.deepcopy(s_pkgs.pkg2).json()
+        data = copy.deepcopy(s_pkgs.pkg2).data
         data['screenshots']['oh://my.dog'] = "Hello."
         data['name'] = 'package-bad-scheme'
         res = self.test_app.post_json('/packages', data,
