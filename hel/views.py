@@ -27,6 +27,7 @@ from hel.utils.query import (
     PackagesSearcher,
     check,
     check_list_of_strs,
+    parse_url,
     replace_chars_in_keys
 )
 
@@ -87,7 +88,6 @@ def auth(request):
     nickname = ''
     password = ''
     email = ''
-    passwd_confirm = ''
     request.response.content_type = 'application/json'
     try:
         params = request.json_body
@@ -260,7 +260,8 @@ def update_package(context, request):
                         check(
                             ver['files'], dict,
                             Messages.type_mismatch % ('files', 'dict',))
-                        for url, file_info in ver['files'].items():
+                        for unchecked_url, file_info in ver['files'].items():
+                            url = parse_url(unchecked_url)
                             if file_info is None:
                                 if k not in query:
                                     query[k] = {}
@@ -372,7 +373,8 @@ def update_package(context, request):
                         query[k][num]['changes'] = ver['changes']
         elif k == 'screenshots':
             check(v, dict, Messages.type_mismatch % (k, 'dict',))
-            for url, desc in v.items():
+            for unchecked_url, desc in v.items():
+                url = parse_url(unchecked_url)
                 if (desc is None or
                         type(check(
                             desc, str,
@@ -448,6 +450,8 @@ def create_package(context, request):
         pkg = ModelPackage(True, **request.json_body)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
         jexc(HTTPBadRequest, Messages.bad_package % str(e))
+    except HTTPBadRequest:
+        raise
     except Exception as e:  # pragma: no cover
         log.warn('Exception caught in create_package: %r.', e)
         jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")

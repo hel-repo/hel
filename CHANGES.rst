@@ -1,3 +1,7 @@
+0.7.2
+-----
+- Add URL validity checks.
+
 0.7.1
 -----
 - Removed ``passwd-confirm`` param.
