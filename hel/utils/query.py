@@ -1,4 +1,5 @@
 from pyramid.httpexceptions import HTTPBadRequest
+import rfc3987
 
 from hel.utils import parse_search_phrase, jexc
 from hel.utils.constants import Constants
@@ -305,3 +306,15 @@ def replace_chars_in_keys(d, repl_chr, repl_to):
     except (ValueError, TypeError, AttributeError):
         return d
     return result
+
+
+def parse_url(url):
+    try:
+        matches = rfc3987.parse(url, rule='URI')
+    except ValueError:
+        jexc(HTTPBadRequest, Messages.invalid_uri)
+    if matches['scheme'] not in ['http', 'https']:
+        jexc(HTTPBadRequest, Messages.invalid_uri)
+    matches['path'] = matches['path'] or '/'
+    matches['fragment'] = None
+    return rfc3987.compose(**matches)
