@@ -384,6 +384,9 @@ def update_package(context, request):
                         query[k] = {}
                     query[k][url] = desc
 
+    query.setdefault('stats', {}).setdefault('date', {})['last-updated'] = (
+            datetime.datetime.utcnow().strftime(Constants.date_format))
+
     def r(d, nd):
         if type(d) == dict and type(nd) == dict:
             result = copy.copy(d)
