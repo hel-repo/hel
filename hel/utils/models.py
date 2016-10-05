@@ -35,15 +35,9 @@ class ModelPackage:
 
         if strict:
             for k in ['name', 'description', 'short_description', 'authors',
-                      'license', 'tags', 'versions', 'screenshots', 'stats']:
+                      'license', 'tags', 'versions', 'screenshots']:
                 if k not in kwargs:
                     raise KeyError(k)
-
-            if 'date' not in kwargs['stats']:
-                raise KeyError('stats.date')
-            for k in ['created', 'last-updated']:
-                if k not in kwargs['stats']['date']:
-                    raise KeyError('stats.date.' + k)
 
         for k, v in kwargs.items():
             if k in ['name', 'description', 'owner', 'license']:
@@ -84,19 +78,6 @@ class ModelPackage:
                                 for url, desc in v.items()}
             elif k == 'short_description':
                 self.data[k] = str(v)[:140]
-            elif k == 'stats':
-                for stat_name, value in v.items():
-                    if stat_name in ['downloads', 'views']:
-                        self.data[k][stat_name] = int(value)
-                    elif stat_name == 'date':
-                        for date_name, date in self.data[k][stat_name].items():
-                            if date_name in ['created', 'last-updated']:
-                                try:
-                                    datetime.datetime.strptime(
-                                        date, Constants.date_format)
-                                except ValueError:
-                                    raise KeyError('stats.date.' + date_name)
-                                self.data[k][stat_name][date_name] = date
 
     @property
     def json(self):
