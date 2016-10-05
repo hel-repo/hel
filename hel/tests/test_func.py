@@ -1,4 +1,5 @@
 import copy
+import datetime
 import os
 import unittest
 
@@ -7,6 +8,7 @@ from webob.headers import ResponseHeaders
 
 from hel.utils.messages import Messages
 from hel.utils.tests import sample_packages as s_pkgs
+from hel.utils.constants import Constants
 
 
 deleted = False
@@ -933,3 +935,13 @@ class FunctionalTestsWithPkg(unittest.TestCase):
             }, status=200)
         data = res.json
         self.assertEqual(len(data), 0)
+
+    def test_get_pkg_date_field(self):
+        res = self.test_app.get('/packages/package-1', status=200)
+        self.assertIn('date', res.json['stats'])
+        self.assertIn('created', res.json['stats']['date'])
+        self.assertIn('last-updated', res.json['stats']['date'])
+        self.assertEqual(res.json['stats']['date']['created'],
+                         res.json['stats']['date']['last-updated'])
+        self.assertIsNotNone(datetime.datetime.strptime(
+            res.json['stats']['date']['created'], Constants.date_format))

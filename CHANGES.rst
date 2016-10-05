@@ -1,6 +1,12 @@
+1.0.0
+-----
+The first stable API release.
+
+- Added ``stats.date`` field.
+
 0.7.2
 -----
-- Add URL validity checks.
+- Added URL validity checks.
 
 0.7.1
 -----
