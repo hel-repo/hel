@@ -11,4 +11,4 @@ class Constants:
     # The regexp used to validate a package name
     name_pattern = re.compile('^[A-Za-z0-9-]+$')
 
-    date_format = '%Y-%m-%d %M:%H:%S'
+    date_format = '%Y-%m-%d %H:%M:%S'
