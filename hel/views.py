@@ -104,6 +104,11 @@ def auth(request):
             for v in headers:
                 request.response.headers.add(v[0], v[1])
             return {'success': True, 'message': Messages.logged_out}
+        request.response.status = '204 No Content'
+        return {'message': 'No actions performed',
+                'code': 204,
+                'title': 'No Content',
+                'success': True}
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
