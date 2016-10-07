@@ -19,7 +19,7 @@ Dev branch: |travis-ci-dev|
 Getting Started - Usage
 -----------------------
 Just open this link in your favorite browser:
-http://hel-roottree.rhcloud.com/
+https://hel-roottree.rhcloud.com/
 
 Getting Started - Dev
 ---------------------
