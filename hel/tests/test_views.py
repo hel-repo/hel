@@ -174,7 +174,7 @@ class PkgSearchTests(unittest.TestCase):
     @one_value_param('authors')
     def test_pkg_search_author(self):
         return [
-            ('Tester', [self.pkg1, self.pkg2, self.pkg3],),
+            ('root', [self.pkg1, self.pkg2, self.pkg3],),
             ('Kjers', [self.pkg2],)
         ]
 

@@ -155,9 +155,7 @@ class PackagesSearchParams:
         def search(pkg):
             success = True
             ver = pkg['versions'][str(latest_version(pkg))]
-            print([x['name'] for y, x in ver['files'].items()])
             for name in param:
-                print(name)
                 success_loop = False
                 for k, v in ver['files'].items():
                     if v['name'] == name:

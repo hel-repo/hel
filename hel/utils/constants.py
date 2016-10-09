@@ -11,4 +11,7 @@ class Constants:
     # The regexp used to validate a package name
     name_pattern = re.compile('^[A-Za-z0-9-]+$')
 
+    # The regexp used to validate a nickname
+    user_pattern = re.compile('^[A-Za-z0-9-_]+$')
+
     date_format = '%Y-%m-%d %H:%M:%S'
