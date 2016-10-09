@@ -333,10 +333,12 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
     def test_no_actions_performed_logged_in(self):
-        res = self.test_app.post_json('/packages', {
-                'action': 'log-in'
+        res = self.test_app.post_json('/auth', {
+                'action': 'log-in',
+                'nickname': 'root',
+                'password': 'oh-no'
             }, headers=self.auth_headers, status=200)
-        self.assertEqual(res.message, 'No actions performed')
+        self.assertEqual(res.json['message'], 'No actions performed')
 
 
 class FunctionalTestsWithReg(unittest.TestCase):
