@@ -496,11 +496,19 @@ def list_packages(context, request):
     packages = context.retrieve({})
     found = searcher.search(packages)
     request.response.content_type = 'application/json'
-    result = found[offset:offset+length]
-    for v in result:
+    result_list = found[offset:offset+length]
+    for v in result_list:
         if '_id' in v:
             del v['_id']
 
+    result = {
+        'offset': offset,
+        'total': len(found),
+        'sent': len(result_list),
+        'truncated': (len(found) > request.registry.settings
+                      ['controller.packages.list_length']),
+        'data': result_list
+    }
     return result
 
 
