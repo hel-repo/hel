@@ -506,7 +506,7 @@ def list_packages(context, request):
         'total': len(found),
         'sent': len(result_list),
         'truncated': (len(found) > request.registry.settings
-                      ['controller.packages.list_length']),
+                      ['controllers.packages.list_length']),
         'data': result_list
     }
     return result

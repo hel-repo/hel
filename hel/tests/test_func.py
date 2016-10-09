@@ -910,7 +910,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'name': 'age pack'
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data['data']), 2)
 
     def test_lst_pkgs_bad_offset(self):
         res = self.test_app.get('/packages', {
@@ -918,7 +918,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 'hi'
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data['data']), 2)
 
     def test_lst_pkgs_offset_1(self):
         res = self.test_app.get('/packages', {
@@ -926,7 +926,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 1
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data['data']), 1)
 
     def test_lst_pkgs_offset_99(self):
         res = self.test_app.get('/packages', {
@@ -934,7 +934,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 99
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 0)
+        self.assertEqual(len(data['data']), 0)
 
     def test_get_pkg_date_field(self):
         res = self.test_app.get('/packages/package-1', status=200)
