@@ -332,6 +332,12 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                                       headers=self.auth_headers, status=400)
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
+    def test_no_actions_performed_logged_in(self):
+        res = self.test_app.post_json('/packages', {
+                'action': 'log-in'
+            }, headers=self.auth_headers, status=200)
+        self.assertEqual(res.message, 'No actions performed')
+
 
 class FunctionalTestsWithReg(unittest.TestCase):
 
