@@ -21,13 +21,9 @@ deploy:
 notifications:
   irc:
     channels:
-      - "irc.esper.net#cc.ru"
+    - irc.esper.net#cc.ru
     use_notice: true
     template:
-      - "\x0300,01New build on \x02%{repository_slug}\x02!"
-      - "\x02%{repository_name}#%{build_number}\x02 [\x1f%{branch}\x1f] \x1f%{message}"
-      - "\x02Elapsed time:\x02 %{elapsed_time} | \x02Total duration:\x02 %{duration}"
-      - "[\x1f%{commit}\x1f] \x02%{author}\x02: \x16%{commit_message}"
-      - "\x02Changes:\x02 %{compare_url}"
-      - "\x02Build details:\x02 %{build_url}"
-
+    - "\x02%{repository_name}#%{build_number}\x02 [\x1F%{branch}\x1F] \x1F%{message}"
+    - "\x02Elapsed time:\x02 %{elapsed_time} | \x02Total duration:\x02 %{duration}"
+    - "\x02Build details:\x02 %{build_url}"
