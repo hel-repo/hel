@@ -104,6 +104,11 @@ def auth(request):
             for v in headers:
                 request.response.headers.add(v[0], v[1])
             return {'success': True, 'message': Messages.logged_out}
+        request.response.status = '200 OK'
+        return {'message': 'No actions performed',
+                'code': 200,
+                'title': 'No Content',
+                'success': True}
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
@@ -223,7 +228,7 @@ def update_package(context, request):
                 jexc(HTTPConflict, Messages.pkg_name_conflict)
             if not Constants.name_pattern.match(v):
                 jexc(HTTPBadRequest, Messages.pkg_bad_name)
-        elif k in ['description', 'owner', 'license']:
+        elif k in ['description', 'license']:
             query[k] = check(
                 v, str,
                 Messages.type_mismatch % (k, 'str',))
@@ -231,6 +236,15 @@ def update_package(context, request):
             query[k] = check(
                 v, str,
                 Messages.type_mismatch % (k, 'str',))[:120]
+        elif k == 'owners':
+            check_list_of_strs(
+                v, Messages.type_mismatch % (k, 'list of strs',))
+            for owner in v:
+                if not Constants.user_pattern.match(owner):
+                    jexc(HTTPBadRequest, Messages.user_bad_name)
+            if len(v) == 0:
+                jexc(HTTPBadRequest, Messages.empty_owner_list)
+            query[k] = v
         elif k in ['authors', 'tags']:
             query[k] = check_list_of_strs(
                 v, Messages.type_mismatch % (k, 'list of strs',))
@@ -450,7 +464,10 @@ def delete_package(context, request):
              permission='pkg_create')
 def create_package(context, request):
     try:
-        pkg = ModelPackage(True, **request.json_body)
+        data = copy.deepcopy(request.json_body)
+        if 'owners' not in data:
+            data['owners'] = [request.authenticated_userid[1:]]
+        pkg = ModelPackage(True, **data)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
         jexc(HTTPBadRequest, Messages.bad_package % str(e))
     except HTTPBadRequest:
@@ -464,7 +481,6 @@ def create_package(context, request):
     if not Constants.name_pattern.match(pkg.data['name']):
         jexc(HTTPBadRequest, Messages.pkg_bad_name)
     data = pkg.pkg
-    data['owner'] = request.authenticated_userid
     context.create(data)
 
     return Response(
@@ -491,11 +507,19 @@ def list_packages(context, request):
     packages = context.retrieve({})
     found = searcher.search(packages)
     request.response.content_type = 'application/json'
-    result = found[offset:offset+length]
-    for v in result:
+    result_list = found[offset:offset+length]
+    for v in result_list:
         if '_id' in v:
             del v['_id']
 
+    result = {
+        'offset': offset,
+        'total': len(found),
+        'sent': len(result_list),
+        'truncated': (len(found) > request.registry.settings
+                      ['controllers.packages.list_length']),
+        'data': result_list
+    }
     return result
 
 

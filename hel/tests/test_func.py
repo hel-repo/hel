@@ -138,14 +138,14 @@ class FunctionalTests(unittest.TestCase):
         self.assertIsNotNone(message)
         self.assertEqual(message.string, Messages.empty_password)
 
-    # def test_failed_reg_nick_use(self):
-    #     data = copy.copy(self.user)
-    #     data['register'] = True
-    #     res = self.test_app.post('/', data, status=200)
-    #     self.assertIsNone(res.html.find(id='log-out'))
-    #     message = res.html.find(id='login-message')
-    #     self.assertIsNotNone(message)
-    #     self.assertEqual(message.string, Messages.password_mismatch)
+    def test_failed_reg_nick_bad(self):
+        res = self.test_app.post_json('/auth', {
+                'action': 'register',
+                'nickname': '!@#',
+                'email': '123@mail.tld',
+                'password': '123'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.user_bad_name)
 
     def test_reg_success(self):
         data = copy.copy(self.user)
@@ -332,6 +332,14 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                                       headers=self.auth_headers, status=400)
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
+    def test_no_actions_performed_logged_in(self):
+        res = self.test_app.post_json('/auth', {
+                'action': 'log-in',
+                'nickname': 'root',
+                'password': 'oh-no'
+            }, headers=self.auth_headers, status=200)
+        self.assertEqual(res.json['message'], 'No actions performed')
+
 
 class FunctionalTestsWithReg(unittest.TestCase):
 
@@ -483,12 +491,31 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertEqual(Messages.type_mismatch % ('description', 'str',),
                          res.json['message'])
 
-    def test_upd_pkg_owner_str(self):
+    def test_upd_pkg_owners_los(self):
         res = self.test_app.patch_json('/packages/package-1', {
-                'owner': ['Hi']
+                'owners': 'Hi'
             }, headers=self.auth_headers, status=400)
-        self.assertEqual(Messages.type_mismatch % ('owner', 'str',),
+        self.assertEqual(Messages.type_mismatch % ('owners', 'list of strs',),
                          res.json['message'])
+
+    def test_upd_pkg_owners_bad_name(self):
+        res = self.test_app.patch_json('/packages/package-2', {
+                'owners': ['!@#$%^&*()']
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.user_bad_name, res.json['message'])
+
+    def test_upd_pkg_owners_empty_list(self):
+        res = self.test_app.patch_json('/packages/package-1', {
+                'owners': []
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.empty_owner_list, res.json['message'])
+
+    def test_upd_pkg_owners_ok(self):
+        self.test_app.patch_json('/packages/package-1', {
+                'owners': ['hi']
+            }, headers=self.auth_headers, status=204)
+        res = self.test_app.get('/packages/package-1', status=200)
+        self.assertListEqual(res.json['owners'], ['hi'])
 
     def test_upd_pkg_license_str(self):
         res = self.test_app.patch_json('/packages/package-2', {
@@ -889,6 +916,22 @@ class FunctionalTestsWithPkg(unittest.TestCase):
             '/packages/package-2',
             headers=self.auth_headers, status=204)
 
+    def test_crt_pkg_owners_bad_user(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['name'] = 'package-1'
+        pkg['owners'] = ['!@#$%^&*()_+|']
+        res = self.test_app.post_json('/packages', pkg,
+                                      headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.user_bad_name, res.json['message'])
+
+    def test_crt_pkg_owners_empty(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['name'] = 'package-2'
+        pkg['owners'] = []
+        res = self.test_app.post_json('/packages', pkg,
+                                      headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.empty_owner_list, res.json['message'])
+
     def test_crt_pkg_name_conflict(self):
         pkg = copy.copy(self.pkg3.data)
         pkg['name'] = 'package-1'
@@ -910,7 +953,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'name': 'age pack'
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data['data']), 2)
 
     def test_lst_pkgs_bad_offset(self):
         res = self.test_app.get('/packages', {
@@ -918,7 +961,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 'hi'
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 2)
+        self.assertEqual(len(data['data']), 2)
 
     def test_lst_pkgs_offset_1(self):
         res = self.test_app.get('/packages', {
@@ -926,7 +969,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 1
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data['data']), 1)
 
     def test_lst_pkgs_offset_99(self):
         res = self.test_app.get('/packages', {
@@ -934,7 +977,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'offset': 99
             }, status=200)
         data = res.json
-        self.assertEqual(len(data), 0)
+        self.assertEqual(len(data['data']), 0)
 
     def test_get_pkg_date_field(self):
         res = self.test_app.get('/packages/package-1', status=200)

@@ -1,8 +1,10 @@
 import datetime
 import json
 
+from pyramid.httpexceptions import HTTPBadRequest
 import semantic_version as semver
 
+from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.query import replace_chars_in_keys, parse_url
@@ -15,7 +17,7 @@ class ModelPackage:
             'name': '',
             'description': '',
             'short_description': '',
-            'owner': '',
+            'owners': [],
             'authors': [],
             'license': '',
             'tags': [],
@@ -35,15 +37,23 @@ class ModelPackage:
 
         if strict:
             for k in ['name', 'description', 'short_description', 'authors',
-                      'license', 'tags', 'versions', 'screenshots']:
+                      'license', 'tags', 'versions', 'screenshots', 'owners']:
                 if k not in kwargs:
                     raise KeyError(k)
 
         for k, v in kwargs.items():
-            if k in ['name', 'description', 'owner', 'license']:
+            if k in ['name', 'description', 'license']:
                 self.data[k] = str(v)
             elif k in ['authors', 'tags']:
                 self.data[k] = [str(x) for x in v]
+            elif k == 'owners':
+                owners = [str(x) for x in v]
+                for owner in owners:
+                    if not Constants.user_pattern.match(owner):
+                        jexc(HTTPBadRequest, Messages.user_bad_name)
+                if len(owners) == 0:
+                    jexc(HTTPBadRequest, Messages.empty_owner_list)
+                self.data[k] = owners
             elif k == 'versions':
                 data = {}
                 for ver, value in v.items():
@@ -111,8 +121,12 @@ class ModelUser:
                     raise KeyError(v)
 
         for k, v in kwargs.items():
-            if k in ['nickname', 'activation_till', 'password',
+            if k in ['activation_till', 'password',
                      'email', 'activation_phrase']:
+                self.data[k] = str(v)
+            elif k == 'nickname':
+                if not Constants.user_pattern.match(str(v)):
+                    jexc(HTTPBadRequest, Messages.user_bad_name)
                 self.data[k] = str(v)
             elif k == 'groups':
                 self.data[k] = [str(x) for x in v]

@@ -76,27 +76,28 @@ class MongoDocument(Resource):
 
 class Package(MongoDocument):
 
-    owner = None
+    owners = None
 
     def __init__(self, ref, parent, id_as_ref=False):
         MongoDocument.__init__(self, ref, parent)
         if id_as_ref:
-            self.get_owner()
+            self.get_owners()
         self.spec = {'name': ref}
         if not id_as_ref:
-            self.get_owner()
+            self.get_owners()
 
-    def get_owner(self):
+    def get_owners(self):
         try:
-            self.owner = self.owner or self.retrieve()['owner']
+            self.owners = self.owners or self.retrieve()['owners']
         except:
             pass
-        return self.owner
+        return self.owners
 
     def __acl__(self):
         data = super().__acl__()
-        if self.owner:
-            data += [(Allow, self.owner, ('pkg_delete', 'pkg_update',),)]
+        if self.owners:
+            for owner in self.owners:
+                data += [(Allow, '@' + owner, ('pkg_delete', 'pkg_update',),)]
         return data
 
 
