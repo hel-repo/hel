@@ -1,3 +1,10 @@
+2.0.0
+-----
+- Change the response of ``Packages:GET``.
+- When the user is logged in, don't respond with the ``400 Bad Request`` message if they send some action, other than ``log-out``.
+- Packages now can have multiple owners.
+- Usernames are checked against a regex (``[A-Za-z0-9-_]+``).
+
 1.0.0
 -----
 The first stable API release.
