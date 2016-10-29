@@ -1,3 +1,7 @@
+2.0.1
+-----
+- Fixed a bug when version details could contain only some of required fields.
+
 2.0.0
 -----
 - Change the response of ``Packages:GET``.
