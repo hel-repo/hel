@@ -270,6 +270,17 @@ def update_package(context, request):
                                 'files' not in ver or
                                 'changes' not in ver):
                             jexc(HTTPBadRequest, Messages.partial_ver)
+                        else:
+                            if k not in query:
+                                query[k] = {}
+                            if num not in query[k]:
+                                query[k][num] = {}
+                            if 'files' not in query[k][num]:
+                                query[k][num]['files'] = {}
+                            if 'depends' not in query[k][num]:
+                                query[k][num]['depends'] = {}
+                            if 'changes' not in query[k][num]:
+                                query[k][num]['changes'] = ""
                     if 'files' in ver:
                         check(
                             ver['files'], dict,
