@@ -340,6 +340,12 @@ class FunctionalTestsWithAuth(unittest.TestCase):
             }, headers=self.auth_headers, status=200)
         self.assertEqual(res.json['message'], 'No actions performed')
 
+    def test_logged_in_profile(self):
+        res = self.test_app.get('/profile',
+                                headers=self.auth_headers, status=200)
+        self.assertTrue(res.json['logged_in'])
+        self.assertEqual(res.json['data']['nickname'], self.user['nickname'])
+
 
 class FunctionalTestsWithReg(unittest.TestCase):
 
@@ -424,6 +430,11 @@ class FunctionalTestsWithReg(unittest.TestCase):
         data = res.json
         self.assertEqual(len(data), 1)
         self.assertNotIn('password', data[0])
+
+    def test_logged_out_profile(self):
+        res = self.test_app.get('/profile', status=200)
+        self.assertFalse(res.json['logged_in'])
+        self.assertNotIn('data', res.json)
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
