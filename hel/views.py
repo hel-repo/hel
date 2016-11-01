@@ -642,6 +642,7 @@ def list_users(context, request):
 
 @view_config(route_name='curuser', renderer='json')
 def current_user(context, request):
+    request.response.content_type = 'application/json'
     if request.logged_in:
         user = {
             'nickname': request.user['nickname']
