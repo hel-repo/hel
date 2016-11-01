@@ -640,7 +640,7 @@ def list_users(context, request):
     return result
 
 
-@view_config(route='curuser', renderer='json')
+@view_config(route_name='curuser', renderer='json')
 def current_user(context, request):
     if request.logged_in:
         user = {
