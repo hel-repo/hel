@@ -638,3 +638,24 @@ def list_users(context, request):
                 'groups': v['groups']
             })
     return result
+
+
+@view_config(route_name='curuser', renderer='json')
+def current_user(context, request):
+    request.response.content_type = 'application/json'
+    if request.logged_in:
+        user = {
+            'nickname': request.user['nickname']
+        }
+        request.response.status = '200 OK'
+        return {
+            'success': True,
+            'logged_in': True,
+            'data': user
+        }
+    else:
+        request.response.status = '200 OK'
+        return {
+            'success': True,
+            'logged_in': False
+        }
