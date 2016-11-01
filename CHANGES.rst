@@ -1,3 +1,7 @@
+2.1.0
+-----
+- Added the /profile route.
+
 2.0.1
 -----
 - Fixed a bug when version details could contain only some of required fields.
