@@ -434,7 +434,7 @@ class FunctionalTestsWithReg(unittest.TestCase):
     def test_logged_out_profile(self):
         res = self.test_app.get('/profile', status=200)
         self.assertFalse(res.json['logged_in'])
-        self.assertNotIn('nickname', res.json['data'])
+        self.assertNotIn('data', res.json)
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
