@@ -9,7 +9,10 @@ from pyramid.httpexceptions import (
     HTTPConflict,
     HTTPNotFound,
     HTTPSuccessful,
-    HTTPError
+    HTTPError,
+    HTTPNoContent,
+    HTTPOk,
+    HTTPCreated
 )
 from pyramid.request import Request
 from pyramid.response import Response
@@ -73,15 +76,9 @@ def auth(request):
         nickname = request.authenticated_userid
         if params['action'] == 'log-out':
             headers = forget(request)
-            request.response.status = '200 OK'
-            for v in headers:
-                request.response.headers.add(v[0], v[1])
-            return {'success': True, 'message': Messages.logged_out}
-        request.response.status = '200 OK'
-        return {'message': 'No actions performed',
-                'code': 200,
-                'title': 'No Content',
-                'success': True}
+            raise HTTPOk(body=Messages.logged_out,
+                          headers=headers)
+        raise HTTPNoContent
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
@@ -100,13 +97,8 @@ def auth(request):
                     correct_hash = user['password']
                     if pass_hash == correct_hash:
                         headers = remember(request, nickname)
-                        request.response.status = '200 OK'
-                        for v in headers:
-                            request.response.headers.add(v[0], v[1])
-                        return {'message': Messages.logged_in,
-                                'code': 200,
-                                'title': 'OK',
-                                'success': True}
+                        raise HTTPOk(detail=Messages.logged_in,
+                                      headers=headers)
                     else:
                         message = Messages.failed_login
                 else:
@@ -156,12 +148,7 @@ def auth(request):
                             subrequest, use_tweens=True)
                         if response.status_code == 201:
                             # TODO: send activation email
-                            request.response.status = '200 OK'
-                            return {'message':
-                                    Messages.account_created_success,
-                                    'code': 200,
-                                    'title': 'OK',
-                                    'success': True}
+                            raise HTTPOk(detail=Messages.account_created_success)
                         else:  # pragma: no cover
                             message = Messages.internal_error
                             log.error(
@@ -179,7 +166,7 @@ def auth(request):
 # Mmm, okay
 @view_config(route_name='teapot', renderer='json')
 def teapot(request):
-    return Response(
+    raise Response(
         status="418 I'm a teapot",
         content_type='application/json')
 
@@ -411,9 +398,7 @@ def update_package(context, request):
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent
 
 
 @view_config(request_method='GET',
@@ -432,7 +417,8 @@ def get_package(context, request):
             }
         })
         del r['_id']
-        return replace_chars_in_keys(r, Constants.key_replace_char, '.')
+        raise HTTPOk(
+            body=replace_chars_in_keys(r, Constants.key_replace_char, '.'))
 
 
 @view_config(request_method='DELETE',
@@ -442,8 +428,7 @@ def get_package(context, request):
 def delete_package(context, request):
     context.delete()
 
-    return Response(
-        status='204 No Content')
+    raise HTTPNoContent
 
 
 @view_config(request_method='POST',
@@ -471,9 +456,7 @@ def create_package(context, request):
     data = pkg.pkg
     context.create(data)
 
-    return Response(
-        status='201 Created',
-        content_type='application/json')
+    raise HTTPCreated
 
 
 @view_config(request_method='GET',
@@ -507,7 +490,7 @@ def list_packages(context, request):
                       ['controllers.packages.list_length']),
         'data': result_list
     }
-    return result
+    raise HTTPOk(body=result)
 
 
 # User controller
@@ -518,9 +501,7 @@ def list_packages(context, request):
 def update_user(context, request):
     context.update(request.json_body, True)
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent
 
 
 @view_config(request_method='GET',
@@ -537,7 +518,7 @@ def get_user(context, request):
             'nickname': r['nickname'],
             'groups': r['groups']
         }
-        return data
+        raise HTTPOk(body=data)
 
 
 @view_config(request_method='DELETE',
@@ -547,9 +528,7 @@ def get_user(context, request):
 def delete_user(context, request):
     context.delete()
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent
 
 
 @view_config(request_method='POST',
@@ -563,9 +542,7 @@ def create_user(context, request):
         raise HTTPBadRequest(detail=Messages.bad_user)
     context.create(user.data)
 
-    return Response(
-        status='201 Created',
-        content_type='application/json')
+    raise HTTPNoContent
 
 
 @view_config(request_method='GET',
@@ -611,24 +588,15 @@ def list_users(context, request):
                 'nickname': v['nickname'],
                 'groups': v['groups']
             })
-    return result
+    raise HTTPOk(body=result)
 
 
-@view_config(route_name='curuser', renderer='json')
+@view_config(route_name='curuser')
 def current_user(context, request):
     if request.logged_in:
         user = {
             'nickname': request.user['nickname']
         }
-        request.response.status = '200 OK'
-        return {
-            'success': True,
-            'logged_in': True,
-            'data': user
-        }
+        raise HTTPOk(body=user)
     else:
-        request.response.status = '200 OK'
-        return {
-            'success': True,
-            'logged_in': False
-        }
+        raise HTTPOk(body={})
