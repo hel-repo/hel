@@ -4,7 +4,6 @@ import json
 from pyramid.httpexceptions import HTTPBadRequest
 import semantic_version as semver
 
-from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.query import replace_chars_in_keys, parse_url
@@ -50,9 +49,9 @@ class ModelPackage:
                 owners = [str(x) for x in v]
                 for owner in owners:
                     if not Constants.user_pattern.match(owner):
-                        jexc(HTTPBadRequest, Messages.user_bad_name)
+                        raise HTTPBadRequest(detail=Messages.user_bad_name)
                 if len(owners) == 0:
-                    jexc(HTTPBadRequest, Messages.empty_owner_list)
+                    raise HTTPBadRequest(detail=Messages.empty_owner_list)
                 self.data[k] = owners
             elif k == 'versions':
                 data = {}
@@ -126,7 +125,7 @@ class ModelUser:
                 self.data[k] = str(v)
             elif k == 'nickname':
                 if not Constants.user_pattern.match(str(v)):
-                    jexc(HTTPBadRequest, Messages.user_bad_name)
+                    raise HTTPBadRequest(detail=Messages.user_bad_name)
                 self.data[k] = str(v)
             elif k == 'groups':
                 self.data[k] = [str(x) for x in v]

@@ -1,7 +1,6 @@
 from pyramid.httpexceptions import HTTPBadRequest
 import rfc3987
 
-from hel.utils import parse_search_phrase, jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.version import latest_version
@@ -249,17 +248,17 @@ class PackagesSearcher:
                 param_method = getattr(PackagesSearchParams, param_name)
                 if (not hasattr(param_method, '_no_param') and
                         (len(param) == 0 or param[0] == '')):
-                    jexc(HTTPBadRequest, Messages.no_values % param_name)
+                    raise HTTPBadRequest(detail=Messages.no_values % param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
-                        jexc(HTTPBadRequest, Messages.too_many_values % (
+                        raise HTTPBadRequest(detail=Messages.too_many_values % (
                              1, len(param),))
                     else:
                         param = param[0]
                 search = param_method(param)
                 searchers.append(search)
             else:
-                jexc(HTTPBadRequest, Messages.bad_search_param % param_name)
+                raise HTTPBadRequest(detail=Messages.bad_search_param % param_name)
         self.searchers = searchers
         return searchers
 
@@ -283,7 +282,7 @@ class PackagesSearcher:
 
 def check(value, expected_type, message=None):
     if type(value) != expected_type:
-        jexc(HTTPBadRequest, message)
+        raise HTTPBadRequest(detail=message)
     return value
 
 
@@ -291,7 +290,7 @@ def check_list_of_strs(value, message=None):
     check(value, list, message)
     for item in value:
         if type(item) != str:
-            jexc(HTTPBadRequest, message)
+            raise HTTPBadRequest(detail=message)
     return value
 
 
@@ -310,9 +309,9 @@ def parse_url(url):
     try:
         matches = rfc3987.parse(url, rule='URI')
     except ValueError:
-        jexc(HTTPBadRequest, Messages.invalid_uri)
+        raise HTTPBadRequest(detail=Messages.invalid_uri)
     if matches['scheme'] not in ['http', 'https']:
-        jexc(HTTPBadRequest, Messages.invalid_uri)
+        raise HTTPBadRequest(detail=Messages.invalid_uri)
     matches['path'] = matches['path'] or '/'
     matches['fragment'] = None
     return rfc3987.compose(**matches)

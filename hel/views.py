@@ -1,25 +1,23 @@
 import copy
 import datetime
 import hashlib
-import json
 import logging
 import os
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPConflict,
-    HTTPFound,
-    HTTPNotFound
+    HTTPNotFound,
+    HTTPSuccessful,
+    HTTPError
 )
 from pyramid.request import Request
 from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config
 import semantic_version as semver
-from webob.headers import ResponseHeaders
 
 from hel.resources import Package, Packages, User, Users
-from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -35,50 +33,26 @@ from hel.utils.query import (
 log = logging.getLogger(__name__)
 
 
-# Home
-@view_config(route_name='home', renderer='templates/home.pt')
-def home(request):
-    message = ''
-    nickname = ''
-    email = ''
-    if request.authenticated_userid:
-        nickname = request.authenticated_userid
-    if any(x in ['log-out', 'log-in', 'register'] for x in request.POST):
-        data = {}
-        for k, v in request.POST.items():
-            if k not in ['log-out', 'log-in', 'register']:
-                data[k] = v
-            else:
-                data['action'] = k
-        subrequest = Request.blank(
-            '/auth', method='POST', POST=json.dumps(data),
-            content_type='application/json')
-        if hasattr(request, 'logged_in'):
-            subrequest.logged_in = request.logged_in
-        response = request.invoke_subrequest(subrequest, use_tweens=True)
-        request.response.headers = response.headers
-        cookie_headers = ResponseHeaders()
-        for k, v in response.headers.items():
-            if k.lower() == 'set-cookie':
-                cookie_headers.add('Set-Cookie', v)
-        message = response.json['message']
-        if not nickname and 'nickname' in request.POST:
-            nickname = request.POST['nickname'].strip()
-        if 'email' in request.POST:
-            email = request.POST['email'].strip()
+# Exception views
+@view_config(context=HTTPSuccessful, renderer='json')
+def exc_success(exc, request):
+    return {"success": True,
+            "title": exc.title,
+            "data": exc.body,
+            "code": exc.code,
+            "version": request.version,
+            "logged_in": request.logged_in}
 
-        if (response.json['success'] and
-                any(x in ['log-out', 'log-in'] for x in request.POST)):
-            return HTTPFound(location=request.url, headers=cookie_headers)
-    request.response.content_type = 'text/html'
-    return {
-        'project': 'hel',
-        'message': message,
-        'nickname': nickname,
-        'email': email,
-        'logged_in': request.logged_in,
-        'version': request.version
-    }
+
+@view_config(context=HTTPError, renderer='json')
+def exc_error(exc, request):
+    return {"success": False,
+            "title": exc.title,
+            "message": exc.detail,
+            "explanation": exc.explanation,
+            "code": exc.code,
+            "version": request.version,
+            "logged_in": request.logged_in}
 
 
 # Auth controller
@@ -88,12 +62,11 @@ def auth(request):
     nickname = ''
     password = ''
     email = ''
-    request.response.content_type = 'application/json'
     try:
         params = request.json_body
     except:
         message = Messages.bad_request
-        jexc(HTTPBadRequest, message)
+        raise HTTPBadRequest(detail=message)
     if 'action' not in params:
         message = Messages.bad_request
     elif request.logged_in:
@@ -199,7 +172,7 @@ def auth(request):
                                 ''.join(['\n * ' + str(x) + ' = ' + str(y)
                                          for x, y in locals().items()])
                             )
-    jexc(HTTPBadRequest, message)
+    raise HTTPBadRequest(detail=message)
 
 
 # Someone requested this
@@ -225,9 +198,9 @@ def update_package(context, request):
             check(v, str, Messages.type_mismatch % (k, 'str',))
             if len([x for x in (request.db['packages']
                                 .find({'name': v}))]) > 0:
-                jexc(HTTPConflict, Messages.pkg_name_conflict)
+                raise HTTPConflict(detail=Messages.pkg_name_conflict)
             if not Constants.name_pattern.match(v):
-                jexc(HTTPBadRequest, Messages.pkg_bad_name)
+                raise HTTPBadRequest(detail=Messages.pkg_bad_name)
         elif k in ['description', 'license']:
             query[k] = check(
                 v, str,
@@ -241,9 +214,9 @@ def update_package(context, request):
                 v, Messages.type_mismatch % (k, 'list of strs',))
             for owner in v:
                 if not Constants.user_pattern.match(owner):
-                    jexc(HTTPBadRequest, Messages.user_bad_name)
+                    raise HTTPBadRequest(detail=Messages.user_bad_name)
             if len(v) == 0:
-                jexc(HTTPBadRequest, Messages.empty_owner_list)
+                raise HTTPBadRequest(detail=Messages.empty_owner_list)
             query[k] = v
         elif k in ['authors', 'tags']:
             query[k] = check_list_of_strs(
@@ -256,7 +229,7 @@ def update_package(context, request):
                 try:
                     num = str(semver.Version.coerce(n))
                 except ValueError as e:
-                    jexc(HTTPBadRequest, str(e))
+                    raise HTTPBadRequest(detail=str(e))
                 if ver is None:
                     if k not in query:
                         query[k] = {}
@@ -269,7 +242,7 @@ def update_package(context, request):
                         if ('depends' not in ver or
                                 'files' not in ver or
                                 'changes' not in ver):
-                            jexc(HTTPBadRequest, Messages.partial_ver)
+                            raise HTTPBadRequest(detail=Messages.partial_ver)
                         else:
                             if k not in query:
                                 query[k] = {}
@@ -305,7 +278,9 @@ def update_package(context, request):
                                         ['files']) and
                                         ('dir' not in file_info or
                                          'name' not in file_info)):
-                                    jexc(HTTPBadRequest, Messages.partial_ver)
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver
+                                    )
                                 if ('dir' in file_info and
                                         check(
                                             file_info['dir'], str,
@@ -347,7 +322,9 @@ def update_package(context, request):
                                         ['depends']) and
                                         ('version' not in dep_info or
                                          'type' not in dep_info)):
-                                    jexc(HTTPBadRequest, Messages.partial_ver)
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver
+                                    )
                                 if k not in query:
                                     query[k] = {}
                                 if num not in query[k]:
@@ -362,7 +339,7 @@ def update_package(context, request):
                                         try:
                                             semver.Spec(dep_info['version'])
                                         except ValueError as e:
-                                            jexc(HTTPBadRequest, str(e))
+                                            raise HTTPBadRequest(detail=str(e))
                                     if 'type' in dep_info:
                                         check(
                                             dep_info['type'], str,
@@ -373,8 +350,9 @@ def update_package(context, request):
                                                     'optional',
                                                     'required'
                                                 ]:
-                                            jexc(HTTPBadRequest,
-                                                 Messages.wrong_dep_type)
+                                            raise HTTPBadRequest(
+                                                detail=Messages.wrong_dep_type
+                                            )
                                     if 'depends' not in query[k][num]:
                                         query[k][num]['depends'] = {}
                                     if (dep_name not in
@@ -446,7 +424,7 @@ def get_package(context, request):
     r = context.retrieve()
 
     if r is None:
-        jexc(HTTPNotFound)
+        raise HTTPNotFound
     else:
         context.update({
             '$inc': {
@@ -454,7 +432,6 @@ def get_package(context, request):
             }
         })
         del r['_id']
-        request.response.content_type = 'application/json'
         return replace_chars_in_keys(r, Constants.key_replace_char, '.')
 
 
@@ -480,17 +457,17 @@ def create_package(context, request):
             data['owners'] = [request.authenticated_userid[1:]]
         pkg = ModelPackage(True, **data)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
-        jexc(HTTPBadRequest, Messages.bad_package % str(e))
+        raise HTTPBadRequest(detail=Messages.bad_package % str(e))
     except HTTPBadRequest:
         raise
     except Exception as e:  # pragma: no cover
         log.warn('Exception caught in create_package: %r.', e)
-        jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
+        raise HTTPBadRequest(detail=Messages.bad_package % "'unknown'")
     if len([x for x in (request.db['packages']
                         .find({'name': pkg.data['name']}))]) > 0:
-        jexc(HTTPConflict, Messages.pkg_name_conflict)
+        raise HTTPConflict(detail=Messages.pkg_name_conflict)
     if not Constants.name_pattern.match(pkg.data['name']):
-        jexc(HTTPBadRequest, Messages.pkg_bad_name)
+        raise HTTPBadRequest(detail=Messages.pkg_bad_name)
     data = pkg.pkg
     context.create(data)
 
@@ -517,7 +494,6 @@ def list_packages(context, request):
     searcher()
     packages = context.retrieve({})
     found = searcher.search(packages)
-    request.response.content_type = 'application/json'
     result_list = found[offset:offset+length]
     for v in result_list:
         if '_id' in v:
@@ -555,13 +531,12 @@ def get_user(context, request):
     r = context.retrieve()
 
     if r is None:
-        jexc(HTTPNotFound)
+        raise HTTPNotFound
     else:
         data = {
             'nickname': r['nickname'],
             'groups': r['groups']
         }
-        request.response.content_type = 'application/json'
         return data
 
 
@@ -585,7 +560,7 @@ def create_user(context, request):
     try:
         user = ModelUser(True, **request.json_body)
     except:
-        jexc(HTTPBadRequest, Messages.bad_user)
+        raise HTTPBadRequest(detail=Messages.bad_user)
     context.create(user.data)
 
     return Response(
@@ -629,7 +604,6 @@ def list_users(context, request):
                 retrieved.append(v)
     else:
         retrieved = retrieved_raw
-    request.response.content_type = 'application/json'
     res = retrieved[offset:offset+length]
     result = []
     for v in res:
@@ -642,7 +616,6 @@ def list_users(context, request):
 
 @view_config(route_name='curuser', renderer='json')
 def current_user(context, request):
-    request.response.content_type = 'application/json'
     if request.logged_in:
         user = {
             'nickname': request.user['nickname']
