@@ -34,9 +34,37 @@ class MongoJSONRenderer:
 # http://stackoverflow.com/a/22862087/5675159
 def add_cors_hdrs_callback(event):
     def cors_hdrs(request, response):
-        response.headers.extend((
-            ('Access-Control-Allow-Origin', '*',),
+        # Use any Origin and -Request-Headers header out of the provided
+        origin = None
+        allow_headers = ''
+        for k, v in request.headers.items():
+            if not origin:
+                if k.lower() == 'origin':
+                    origin = v
+            if not allow_headers:
+                if k.lower() == 'access-control-request-headers':
+                    allow_headers = v
+            if allow_headers and origin:
+                break
+
+        hdrs = []
+        if origin:
+            hdrs.append(
+                ('Access-Control-Allow-Origin', origin,)
+            )
+        else:
+            hdrs.append(
+                ('Access-Control-Allow-Origin', '*',)
+            )
+        if allow_headers:
+            hdrs.append(
+                ('Access-Control-Allow-Headers', allow_headers,)
+            )
+        hdrs.extend((
+            ('Access-Control-Allow-Methods', 'OPTIONS, HEAD, POST, GET, PATCH, DELETE, PUT',),
+            ('Access-Control-Allow-Credentials', 'true',)
         ))
+        response.headers.extend(tuple(hdrs))
     event.request.add_response_callback(cors_hdrs)
 
 
