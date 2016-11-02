@@ -76,89 +76,74 @@ def auth(request):
         nickname = request.authenticated_userid
         if params['action'] == 'log-out':
             headers = forget(request)
-            raise HTTPOk(body=Messages.logged_out,
-                          headers=headers)
+            raise HTTPOk(body=Messages.logged_out, headers=headers)
         raise HTTPNoContent
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
             password = params['password'].strip()
         except KeyError:
-            message = Messages.bad_request
-        else:
-            if nickname == '':
-                message = Messages.empty_nickname
-            elif password == '':
-                message = Messages.empty_password
-            else:
-                pass_hash = hashlib.sha512(password.encode()).hexdigest()
-                user = request.db['users'].find_one({'nickname': nickname})
-                if user:
-                    correct_hash = user['password']
-                    if pass_hash == correct_hash:
-                        headers = remember(request, nickname)
-                        raise HTTPOk(detail=Messages.logged_in,
-                                      headers=headers)
-                    else:
-                        message = Messages.failed_login
-                else:
-                    message = Messages.failed_login
+            raise HTTPBadRequest(detail=Messages.bad_request)
+        if nickname == '':
+            raise HTTPBadRequest(detail=Messages.empty_nickname)
+        if password == '':
+            raise HTTPBadRequest(detail=Messages.empty_password)
+        pass_hash = hashlib.sha512(password.encode()).hexdigest()
+        user = request.db['users'].find_one({'nickname': nickname})
+        if not user:
+            raise HTTPBadRequest(detail=Messages.failed_login)
+        correct_hash = user['password']
+        if pass_hash != correct_hash:
+            raise HTTPBadRequest(detail=Messages.failed_login)
+        headers = remember(request, nickname)
+        raise HTTPOk(detail=Messages.logged_in, headers=headers)
     elif params['action'] == 'register':
         try:
             nickname = params['nickname'].strip()
             email = params['email'].strip()
             password = params['password'].strip()
         except (KeyError, AttributeError):
-            message = Messages.bad_request
-        else:
-            if nickname == '':
-                message = Messages.empty_nickname
-            elif email == '':
-                message = Messages.empty_email
-            elif password == '':
-                message = Messages.empty_password
-            else:
-                pass_hash = hashlib.sha512(password.encode()).hexdigest()
-                user = request.db['users'].find_one({'nickname': nickname})
-                if user:
-                    message = Messages.nickname_in_use
-                else:
-                    user = request.db['users'].find_one({'email': email})
-                    if user:
-                        message = Messages.email_in_use
-                    else:
-                        act_phrase = ''.join(
-                            '{:02x}'.format(x) for x in os.urandom(
-                                request.registry.settings
-                                ['activation.length']))
-                        act_till = (datetime.datetime.now() +
-                                    datetime.timedelta(
-                                        seconds=request.registry.settings
-                                        ['activation.time']))
-                        subrequest = Request.blank(
-                            '/users', method='POST', POST=(
-                                str(ModelUser(nickname=nickname,
-                                              email=email,
-                                              password=pass_hash,
-                                              activation_phrase=act_phrase,
-                                              activation_till=act_till))),
-                            content_type='application/json')
-                        subrequest.no_permission_check = True
-                        response = request.invoke_subrequest(
-                            subrequest, use_tweens=True)
-                        if response.status_code == 201:
-                            # TODO: send activation email
-                            raise HTTPOk(detail=Messages.account_created_success)
-                        else:  # pragma: no cover
-                            message = Messages.internal_error
-                            log.error(
-                                'Could not create a user: subrequest'
-                                ' returned with status code %s!\n'
-                                'Local variables in frame:%s',
-                                response.status_code,
-                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                                         for x, y in locals().items()])
-                            )
+            raise HTTPBadRequest(detail=Messages.bad_request)
+        if nickname == '':
+            raise HTTPBadRequest(detail=Messages.empty_nickname)
+        if email == '':
+            raise HTTPBadRequest(detail=Messages.empty_email)
+        if password == '':
+            raise HTTPBadRequest(detail=Messages.empty_password)
+        pass_hash = hashlib.sha512(password.encode()).hexdigest()
+        user = request.db['users'].find_one({'nickname': nickname})
+        if user:
+            raise HTTPBadRequest(detail=Messages.nickname_in_use)
+        user = request.db['users'].find_one({'email': email})
+        if user:
+            raise HTTPBadRequest(detail=Messages.email_in_use)
+        act_phrase = ''.join('{:02x}'.format(x) for x in os.urandom(
+            request.registry.settings
+            ['activation.length']))
+        act_till = (datetime.datetime.now() + datetime.timedelta(
+            seconds=request.registry.settings['activation.time']))
+        subrequest = Request.blank('/users', method='POST', POST=(
+                str(ModelUser(nickname=nickname,
+                              email=email,
+                              password=pass_hash,
+                              activation_phrase=act_phrase,
+                              activation_till=act_till))),
+            content_type='application/json')
+        subrequest.no_permission_check = True
+        response = request.invoke_subrequest(subrequest, use_tweens=True)
+        if response.status_code == 201:
+            # TODO: send activation email
+            raise HTTPOk(detail=Messages.account_created_success)
+        else:  # pragma: no cover
+            message = Messages.internal_error
+            log.error(
+                'Could not create a user: subrequest'
+                ' returned with status code %s!\n'
+                'Local variables in frame:%s',
+                response.status_code,
+                ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                         for x, y in locals().items()])
+            )
     raise HTTPBadRequest(detail=message)
 
 
