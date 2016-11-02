@@ -61,7 +61,8 @@ def add_cors_hdrs_callback(event):
                 ('Access-Control-Allow-Headers', allow_headers,)
             )
         hdrs.extend((
-            ('Access-Control-Allow-Methods', 'OPTIONS, HEAD, POST, GET, PATCH, DELETE, PUT',),
+            ('Access-Control-Allow-Methods', 'OPTIONS, HEAD, POST, GET, '
+             'PATCH, DELETE, PUT',),
             ('Access-Control-Allow-Credentials', 'true',)
         ))
         response.headers.extend(tuple(hdrs))
