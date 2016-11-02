@@ -27,7 +27,7 @@ class MongoJSONRenderer:
         request = system.get('request')
         if request is not None:
             if not hasattr(request, 'response_content_type'):
-                request.response_content_type = 'application/json'
+                request.response.content_type = 'application/json'
         return json.dumps(value, default=json_util.default)
 
 
