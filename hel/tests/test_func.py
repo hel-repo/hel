@@ -175,10 +175,27 @@ class FunctionalTests(unittest.TestCase):
     def test_teapot(self):
         self.test_app.post('/teapot', status=418)
 
-    def test_cors_headers(self):
+    def test_simple_cors_headers(self):
         res = self.test_app.post('/', status=200)
-        self.assertTrue(any(v[0] == 'Access-Control-Allow-Origin' and
-                            v[1] == '*' for v in res.headerlist))
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-origin' and
+            v[1] == '*' for v in res.headerlist))
+
+    def test_preflight_cors_headers(self):
+        headers = ResponseHeaders()
+        headers.add('Origin', 'http://example.com')
+        headers.add('Access-Control-Request-Method', 'POST')
+        headers.add('Access-Control-Request-Headers', 'X-HELLO, Content-Type')
+        res = self.test_app.options('/', status=200, headers=headers)
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-origin' and
+            v[1] == 'http://example.com' for v in res.headerlist))
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-methods' and
+            'POST' in v[1] for v in res.headerlist))
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-headers' and
+            'X-HELLO, Content-Type' in v[1] for v in res.headerlist))
 
 
 class FunctionalAuthTests(unittest.TestCase):
