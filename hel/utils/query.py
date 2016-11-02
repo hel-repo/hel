@@ -1,6 +1,7 @@
 from pyramid.httpexceptions import HTTPBadRequest
 import rfc3987
 
+from hel.utils import parse_search_phrase
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.version import latest_version
@@ -248,17 +249,19 @@ class PackagesSearcher:
                 param_method = getattr(PackagesSearchParams, param_name)
                 if (not hasattr(param_method, '_no_param') and
                         (len(param) == 0 or param[0] == '')):
-                    raise HTTPBadRequest(detail=Messages.no_values % param_name)
+                    raise HTTPBadRequest(
+                        detail=Messages.no_values % param_name)
                 if hasattr(param_method, '_only_one'):
                     if len(param) > 1:
-                        raise HTTPBadRequest(detail=Messages.too_many_values % (
-                             1, len(param),))
+                        raise HTTPBadRequest(
+                            detail=Messages.too_many_values % (1, len(param),))
                     else:
                         param = param[0]
                 search = param_method(param)
                 searchers.append(search)
             else:
-                raise HTTPBadRequest(detail=Messages.bad_search_param % param_name)
+                raise HTTPBadRequest(
+                    detail=Messages.bad_search_param % param_name)
         self.searchers = searchers
         return searchers
 

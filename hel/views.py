@@ -12,7 +12,8 @@ from pyramid.httpexceptions import (
     HTTPError,
     HTTPNoContent,
     HTTPOk,
-    HTTPCreated
+    HTTPCreated,
+    HTTPInternalServerError
 )
 from pyramid.request import Request
 from pyramid.response import Response
@@ -39,16 +40,26 @@ log = logging.getLogger(__name__)
 # Exception views
 @view_config(context=HTTPSuccessful, renderer='json')
 def exc_success(exc, request):
-    return {"success": True,
-            "title": exc.title,
-            "data": exc.body,
-            "code": exc.code,
-            "version": request.version,
-            "logged_in": request.logged_in}
+    request.response.status = exc.code
+    request.response.headers.extend(exc.headers)
+    if exc.empty_body:
+        return request.response
+    else:
+        body = exc.body
+        if type(body) == bytes:
+            body = body.decode('utf-8')
+        return {"success": True,
+                "title": exc.title,
+                "data": body,
+                "code": exc.code,
+                "version": request.version,
+                "logged_in": request.logged_in}
 
 
 @view_config(context=HTTPError, renderer='json')
 def exc_error(exc, request):
+    request.response.status = exc.code
+    request.response.headers.extend(exc.headers)
     return {"success": False,
             "title": exc.title,
             "message": exc.detail,
@@ -61,15 +72,13 @@ def exc_error(exc, request):
 # Auth controller
 @view_config(route_name='auth')
 def auth(request):
-    message = ''
     nickname = ''
     password = ''
     email = ''
     try:
         params = request.json_body
     except:
-        message = Messages.bad_request
-        raise HTTPBadRequest(detail=message)
+        raise HTTPBadRequest(detail=Messages.bad_request)
     if 'action' not in params:
         message = Messages.bad_request
     elif request.logged_in:
@@ -77,7 +86,7 @@ def auth(request):
         if params['action'] == 'log-out':
             headers = forget(request)
             raise HTTPOk(body=Messages.logged_out, headers=headers)
-        raise HTTPNoContent
+        raise HTTPNoContent()
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
@@ -96,7 +105,7 @@ def auth(request):
         if pass_hash != correct_hash:
             raise HTTPBadRequest(detail=Messages.failed_login)
         headers = remember(request, nickname)
-        raise HTTPOk(detail=Messages.logged_in, headers=headers)
+        raise HTTPOk(body=Messages.logged_in, headers=headers)
     elif params['action'] == 'register':
         try:
             nickname = params['nickname'].strip()
@@ -133,9 +142,8 @@ def auth(request):
         response = request.invoke_subrequest(subrequest, use_tweens=True)
         if response.status_code == 201:
             # TODO: send activation email
-            raise HTTPOk(detail=Messages.account_created_success)
+            raise HTTPOk(body=Messages.account_created_success)
         else:  # pragma: no cover
-            message = Messages.internal_error
             log.error(
                 'Could not create a user: subrequest'
                 ' returned with status code %s!\n'
@@ -144,16 +152,8 @@ def auth(request):
                 ''.join(['\n * ' + str(x) + ' = ' + str(y)
                          for x, y in locals().items()])
             )
-    raise HTTPBadRequest(detail=message)
-
-
-# Someone requested this
-# Mmm, okay
-@view_config(route_name='teapot')
-def teapot(request):
-    raise Response(
-        status="418 I'm a teapot",
-        content_type='application/json')
+            raise HTTPInternalServerError(Messages.internal_error)
+    raise HTTPBadRequest(detail=Messages.bad_request)
 
 
 # Package controller
@@ -382,7 +382,7 @@ def update_package(context, request):
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
-    raise HTTPNoContent
+    raise HTTPNoContent()
 
 
 @view_config(request_method='GET',
@@ -392,7 +392,7 @@ def get_package(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound
+        raise HTTPNotFound()
     else:
         context.update({
             '$inc': {
@@ -410,7 +410,7 @@ def get_package(context, request):
 def delete_package(context, request):
     context.delete()
 
-    raise HTTPNoContent
+    raise HTTPNoContent()
 
 
 @view_config(request_method='POST',
@@ -437,7 +437,7 @@ def create_package(context, request):
     data = pkg.pkg
     context.create(data)
 
-    raise HTTPCreated
+    raise HTTPCreated()
 
 
 @view_config(request_method='GET',
@@ -480,7 +480,7 @@ def list_packages(context, request):
 def update_user(context, request):
     context.update(request.json_body, True)
 
-    raise HTTPNoContent
+    raise HTTPNoContent()
 
 
 @view_config(request_method='GET',
@@ -490,7 +490,7 @@ def get_user(context, request):
     r = context.retrieve()
 
     if r is None:
-        raise HTTPNotFound
+        raise HTTPNotFound()
     else:
         data = {
             'nickname': r['nickname'],
@@ -505,7 +505,7 @@ def get_user(context, request):
 def delete_user(context, request):
     context.delete()
 
-    raise HTTPNoContent
+    raise HTTPNoContent()
 
 
 @view_config(request_method='POST',
@@ -518,7 +518,7 @@ def create_user(context, request):
         raise HTTPBadRequest(detail=Messages.bad_user)
     context.create(user.data)
 
-    raise HTTPNoContent
+    raise HTTPCreated()
 
 
 @view_config(request_method='GET',
