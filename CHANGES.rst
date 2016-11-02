@@ -1,3 +1,7 @@
+2.1.1
+-----
+- Added more CORS headers.
+
 2.1.0
 -----
 - Added the /profile route.
