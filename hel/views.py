@@ -59,7 +59,7 @@ def exc_error(exc, request):
 
 
 # Auth controller
-@view_config(route_name='auth', renderer='json')
+@view_config(route_name='auth')
 def auth(request):
     message = ''
     nickname = ''
@@ -164,7 +164,7 @@ def auth(request):
 
 # Someone requested this
 # Mmm, okay
-@view_config(route_name='teapot', renderer='json')
+@view_config(route_name='teapot')
 def teapot(request):
     raise Response(
         status="418 I'm a teapot",
@@ -174,7 +174,6 @@ def teapot(request):
 # Package controller
 @view_config(request_method='PATCH',
              context=Package,
-             renderer='json',
              permission='pkg_update')
 def update_package(context, request):
     query = {}
@@ -403,7 +402,6 @@ def update_package(context, request):
 
 @view_config(request_method='GET',
              context=Package,
-             renderer='json',
              permission='pkg_view')
 def get_package(context, request):
     r = context.retrieve()
@@ -423,7 +421,6 @@ def get_package(context, request):
 
 @view_config(request_method='DELETE',
              context=Package,
-             renderer='json',
              permission='pkg_delete')
 def delete_package(context, request):
     context.delete()
@@ -433,7 +430,6 @@ def delete_package(context, request):
 
 @view_config(request_method='POST',
              context=Packages,
-             renderer='json',
              permission='pkg_create')
 def create_package(context, request):
     try:
@@ -461,7 +457,6 @@ def create_package(context, request):
 
 @view_config(request_method='GET',
              context=Packages,
-             renderer='json',
              permission='pkgs_view')
 def list_packages(context, request):
     params = request.GET.dict_of_lists()
@@ -496,7 +491,6 @@ def list_packages(context, request):
 # User controller
 @view_config(request_method='PATCH',
              context=User,
-             renderer='json',
              permission='user_update')
 def update_user(context, request):
     context.update(request.json_body, True)
@@ -506,7 +500,6 @@ def update_user(context, request):
 
 @view_config(request_method='GET',
              context=User,
-             renderer='json',
              permission='user_get')
 def get_user(context, request):
     r = context.retrieve()
@@ -523,7 +516,6 @@ def get_user(context, request):
 
 @view_config(request_method='DELETE',
              context=User,
-             renderer='json',
              permission='user_delete')
 def delete_user(context, request):
     context.delete()
@@ -533,7 +525,6 @@ def delete_user(context, request):
 
 @view_config(request_method='POST',
              context=Users,
-             renderer='json',
              permission='user_create')
 def create_user(context, request):
     try:
@@ -547,7 +538,6 @@ def create_user(context, request):
 
 @view_config(request_method='GET',
              context=Users,
-             renderer='json',
              permission='user_list')
 def list_users(context, request):
     params = request.GET
