@@ -23,7 +23,6 @@ class ModelPackage:
             'versions': {},
             'screenshots': {},
             'stats': {
-                'downloads': 0,
                 'views': 0,
                 'date': {
                     'created': (datetime.datetime.utcnow()
