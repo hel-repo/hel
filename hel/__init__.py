@@ -26,47 +26,53 @@ class MongoJSONRenderer:
         from bson import json_util
         request = system.get('request')
         if request is not None:
-            if not hasattr(request, 'response_content_type'):
+            if hasattr(request, 'response'):
                 request.response.content_type = 'application/json'
         return json.dumps(value, default=json_util.default)
 
 
-# http://stackoverflow.com/a/22862087/5675159
-def add_cors_hdrs_callback(event):
-    def cors_hdrs(request, response):
-        # Use any Origin and -Request-Headers header out of the provided
-        origin = None
-        allow_headers = ''
-        for k, v in request.headers.items():
-            if not origin:
-                if k.lower() == 'origin':
-                    origin = v
-            if not allow_headers:
-                if k.lower() == 'access-control-request-headers':
-                    allow_headers = v
-            if allow_headers and origin:
-                break
+# https://gist.github.com/kamalgill/b1f682dbdc6d6df4d052
+class CorsPreflightPredicate(object):
+    def __init__(self, val, config):
+        self.val = val
 
-        hdrs = []
-        if origin:
-            hdrs.append(
-                ('Access-Control-Allow-Origin', origin,)
+    def text(self):
+        return 'cors_preflight = %s' % bool(self.val)
+
+    phash = text
+
+    def __call__(self, context, request):
+        # huh?
+        if not self.val:  # pragma: no cover
+            return False
+        return (
+            request.method == 'OPTIONS' and
+            'Origin' in request.headers and
+            'Access-Control-Request-Method' in request.headers
             )
-        else:
-            hdrs.append(
-                ('Access-Control-Allow-Origin', '*',)
-            )
-        if allow_headers:
-            hdrs.append(
-                ('Access-Control-Allow-Headers', allow_headers,)
-            )
-        hdrs.extend((
-            ('Access-Control-Allow-Methods', 'OPTIONS, HEAD, POST, GET, '
-             'PATCH, DELETE, PUT',),
-            ('Access-Control-Allow-Credentials', 'true',)
-        ))
-        response.headers.extend(tuple(hdrs))
-    event.request.add_response_callback(cors_hdrs)
+
+
+def add_cors_to_response(event):
+    request = event.request
+    response = event.response
+    if 'Origin' in request.headers:
+        response.headers['Access-Control-Expose-Headers'] = (
+            'Content-Type,Date,Content-Length,Authorization,X-Request-ID')
+        response.headers['Access-Control-Allow-Origin'] = (
+            request.headers['Origin'])
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+
+
+def cors_options_view(context, request):
+    response = request.response
+    if 'Access-Control-Request-Headers' in request.headers:
+        response.headers['Access-Control-Allow-Methods'] = (
+            'OPTIONS,HEAD,GET,POST,PUT,DELETE')
+    response.headers['Access-Control-Allow-Headers'] = (
+        request.headers['Access-Control-Request-Headers'])
+    return response
 
 
 def main(global_config, **settings):
@@ -75,7 +81,7 @@ def main(global_config, **settings):
     from pymongo import MongoClient
     from pyramid.authorization import ACLAuthorizationPolicy
     from pyramid.config import Configurator
-    from pyramid.events import NewRequest
+    from pyramid.security import NO_PERMISSION_REQUIRED
 
     from hel.resources import Root
     from hel.utils.authentication import (
@@ -103,14 +109,24 @@ def main(global_config, **settings):
         'controllers.users.list_length', '20'))
 
     config = Configurator(settings=settings, root_factory=Root)
+
+    config.add_route_predicate('cors_preflight', CorsPreflightPredicate)
+    config.add_subscriber(add_cors_to_response, 'pyramid.events.NewResponse')
+
+    config.add_route(
+        'cors-options-preflight', '/{catch_all:.*}',
+        cors_preflight=True)
+    config.add_view(
+        cors_options_view,
+        route_name='cors-options-preflight',
+        permission=NO_PERMISSION_REQUIRED,
+    )
+
     config.set_authentication_policy(authentication_policy)
     config.set_authorization_policy(authorization_policy)
     config.include('pyramid_chameleon')
     config.add_renderer('json', MongoJSONRenderer)
     config.add_static_view('static', 'static', cache_max_age=3600)
-
-    # Set listeners
-    config.add_subscriber(add_cors_hdrs_callback, NewRequest)
 
     # Setup MongoDB
     url = 'mongodb://localhost:27017/'

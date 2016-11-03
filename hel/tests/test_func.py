@@ -160,7 +160,7 @@ class FunctionalTests(unittest.TestCase):
         headers.add('Origin', 'http://example.com')
         headers.add('Access-Control-Request-Method', 'POST')
         headers.add('Access-Control-Request-Headers', 'X-HELLO, Content-Type')
-        res = self.test_app.options('/auth', status=400, headers=headers)
+        res = self.test_app.options('/auth', status=200, headers=headers)
         self.assertTrue(any(
             v[0].lower() == 'access-control-allow-origin' and
             v[1] == 'http://example.com' for v in res.headerlist))
