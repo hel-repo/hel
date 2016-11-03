@@ -399,6 +399,11 @@ def get_package(context, request):
                 'stats.views': 1
             }
         })
+        context.update({
+            '$unset': {
+                'stats.downloads': ""
+            }
+        })
         del r['_id']
         raise HTTPOk(
             body=replace_chars_in_keys(r, Constants.key_replace_char, '.'))
