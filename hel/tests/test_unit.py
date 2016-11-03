@@ -34,8 +34,7 @@ class UnitTests(unittest.TestCase):
         try:
             check_list_of_strs(['test', 555], 'test')
         except HTTPBadRequest as e:
-            self.assertEqual(json.loads(e.body.decode('utf-8'))['message'],
-                             'test')
+            self.assertEqual(e.detail, 'test')
         else:
             raise AssertionError()
         check_list_of_strs(['test', 'test2'])

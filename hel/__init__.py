@@ -27,7 +27,7 @@ class MongoJSONRenderer:
         request = system.get('request')
         if request is not None:
             if not hasattr(request, 'response_content_type'):
-                request.response_content_type = 'application/json'
+                request.response.content_type = 'application/json'
         return json.dumps(value, default=json_util.default)
 
 
@@ -133,7 +133,6 @@ def main(global_config, **settings):
     config.add_request_method(is_logged_in, 'logged_in', reify=True)
 
     # Setup routes
-    config.add_route('home', '/')
     config.add_route('teapot', '/teapot')
     config.add_route('auth', '/auth')
     config.add_route('curuser', '/profile')
