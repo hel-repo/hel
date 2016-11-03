@@ -3,8 +3,8 @@
 - Unified responses.
 - Refactored the code.
 - Removed stats.downloads.
-- Renamed data.data (Packages:GET) to data.list.
-- Added the same metadata to the response of Users:GET as the Packages:GET's.
+- Renamed data.data (``Packages:GET``) to data.list.
+- Added the same metadata to the response of ``Users:GET`` as the ``Packages:GET``'s.
 - Always set Content-Type to application/json.
 
 2.1.1
