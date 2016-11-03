@@ -1,25 +1,27 @@
 import copy
 import datetime
 import hashlib
-import json
 import logging
 import os
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
     HTTPConflict,
-    HTTPFound,
-    HTTPNotFound
+    HTTPNotFound,
+    HTTPSuccessful,
+    HTTPError,
+    HTTPNoContent,
+    HTTPOk,
+    HTTPCreated,
+    HTTPInternalServerError
 )
 from pyramid.request import Request
 from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config
 import semantic_version as semver
-from webob.headers import ResponseHeaders
 
 from hel.resources import Package, Packages, User, Users
-from hel.utils import jexc
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -35,186 +37,128 @@ from hel.utils.query import (
 log = logging.getLogger(__name__)
 
 
-# Home
-@view_config(route_name='home', renderer='templates/home.pt')
-def home(request):
-    message = ''
-    nickname = ''
-    email = ''
-    if request.authenticated_userid:
-        nickname = request.authenticated_userid
-    if any(x in ['log-out', 'log-in', 'register'] for x in request.POST):
-        data = {}
-        for k, v in request.POST.items():
-            if k not in ['log-out', 'log-in', 'register']:
-                data[k] = v
-            else:
-                data['action'] = k
-        subrequest = Request.blank(
-            '/auth', method='POST', POST=json.dumps(data),
-            content_type='application/json')
-        if hasattr(request, 'logged_in'):
-            subrequest.logged_in = request.logged_in
-        response = request.invoke_subrequest(subrequest, use_tweens=True)
-        request.response.headers = response.headers
-        cookie_headers = ResponseHeaders()
-        for k, v in response.headers.items():
-            if k.lower() == 'set-cookie':
-                cookie_headers.add('Set-Cookie', v)
-        message = response.json['message']
-        if not nickname and 'nickname' in request.POST:
-            nickname = request.POST['nickname'].strip()
-        if 'email' in request.POST:
-            email = request.POST['email'].strip()
+# Exception views
+@view_config(context=HTTPSuccessful, renderer='json')
+def exc_success(exc, request):
+    request.response.status = exc.code
+    request.response.headers.extend(exc.headers)
+    if exc.empty_body:
+        return request.response
+    else:
+        body = exc.body
+        if type(body) == bytes:
+            body = body.decode('utf-8')
+        return {"success": True,
+                "title": exc.title,
+                "data": body,
+                "code": exc.code,
+                "version": request.version,
+                "logged_in": request.logged_in}
 
-        if (response.json['success'] and
-                any(x in ['log-out', 'log-in'] for x in request.POST)):
-            return HTTPFound(location=request.url, headers=cookie_headers)
-    request.response.content_type = 'text/html'
-    return {
-        'project': 'hel',
-        'message': message,
-        'nickname': nickname,
-        'email': email,
-        'logged_in': request.logged_in,
-        'version': request.version
-    }
+
+@view_config(context=HTTPError, renderer='json')
+def exc_error(exc, request):
+    request.response.status = exc.code
+    request.response.headers.extend(exc.headers)
+    return {"success": False,
+            "title": exc.title,
+            "message": exc.detail,
+            "explanation": exc.explanation,
+            "code": exc.code,
+            "version": request.version,
+            "logged_in": request.logged_in}
 
 
 # Auth controller
-@view_config(route_name='auth', renderer='json')
+@view_config(route_name='auth')
 def auth(request):
-    message = ''
     nickname = ''
     password = ''
     email = ''
-    request.response.content_type = 'application/json'
     try:
         params = request.json_body
     except:
-        message = Messages.bad_request
-        jexc(HTTPBadRequest, message)
+        raise HTTPBadRequest(detail=Messages.bad_request)
     if 'action' not in params:
         message = Messages.bad_request
     elif request.logged_in:
         nickname = request.authenticated_userid
         if params['action'] == 'log-out':
             headers = forget(request)
-            request.response.status = '200 OK'
-            for v in headers:
-                request.response.headers.add(v[0], v[1])
-            return {'success': True, 'message': Messages.logged_out}
-        request.response.status = '200 OK'
-        return {'message': 'No actions performed',
-                'code': 200,
-                'title': 'No Content',
-                'success': True}
+            raise HTTPOk(body=Messages.logged_out, headers=headers)
+        raise HTTPNoContent()
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()
             password = params['password'].strip()
         except KeyError:
-            message = Messages.bad_request
-        else:
-            if nickname == '':
-                message = Messages.empty_nickname
-            elif password == '':
-                message = Messages.empty_password
-            else:
-                pass_hash = hashlib.sha512(password.encode()).hexdigest()
-                user = request.db['users'].find_one({'nickname': nickname})
-                if user:
-                    correct_hash = user['password']
-                    if pass_hash == correct_hash:
-                        headers = remember(request, nickname)
-                        request.response.status = '200 OK'
-                        for v in headers:
-                            request.response.headers.add(v[0], v[1])
-                        return {'message': Messages.logged_in,
-                                'code': 200,
-                                'title': 'OK',
-                                'success': True}
-                    else:
-                        message = Messages.failed_login
-                else:
-                    message = Messages.failed_login
+            raise HTTPBadRequest(detail=Messages.bad_request)
+        if nickname == '':
+            raise HTTPBadRequest(detail=Messages.empty_nickname)
+        if password == '':
+            raise HTTPBadRequest(detail=Messages.empty_password)
+        pass_hash = hashlib.sha512(password.encode()).hexdigest()
+        user = request.db['users'].find_one({'nickname': nickname})
+        if not user:
+            raise HTTPBadRequest(detail=Messages.failed_login)
+        correct_hash = user['password']
+        if pass_hash != correct_hash:
+            raise HTTPBadRequest(detail=Messages.failed_login)
+        headers = remember(request, nickname)
+        raise HTTPOk(body=Messages.logged_in, headers=headers)
     elif params['action'] == 'register':
         try:
             nickname = params['nickname'].strip()
             email = params['email'].strip()
             password = params['password'].strip()
         except (KeyError, AttributeError):
-            message = Messages.bad_request
-        else:
-            if nickname == '':
-                message = Messages.empty_nickname
-            elif email == '':
-                message = Messages.empty_email
-            elif password == '':
-                message = Messages.empty_password
-            else:
-                pass_hash = hashlib.sha512(password.encode()).hexdigest()
-                user = request.db['users'].find_one({'nickname': nickname})
-                if user:
-                    message = Messages.nickname_in_use
-                else:
-                    user = request.db['users'].find_one({'email': email})
-                    if user:
-                        message = Messages.email_in_use
-                    else:
-                        act_phrase = ''.join(
-                            '{:02x}'.format(x) for x in os.urandom(
-                                request.registry.settings
-                                ['activation.length']))
-                        act_till = (datetime.datetime.now() +
-                                    datetime.timedelta(
-                                        seconds=request.registry.settings
-                                        ['activation.time']))
-                        subrequest = Request.blank(
-                            '/users', method='POST', POST=(
-                                str(ModelUser(nickname=nickname,
-                                              email=email,
-                                              password=pass_hash,
-                                              activation_phrase=act_phrase,
-                                              activation_till=act_till))),
-                            content_type='application/json')
-                        subrequest.no_permission_check = True
-                        response = request.invoke_subrequest(
-                            subrequest, use_tweens=True)
-                        if response.status_code == 201:
-                            # TODO: send activation email
-                            request.response.status = '200 OK'
-                            return {'message':
-                                    Messages.account_created_success,
-                                    'code': 200,
-                                    'title': 'OK',
-                                    'success': True}
-                        else:  # pragma: no cover
-                            message = Messages.internal_error
-                            log.error(
-                                'Could not create a user: subrequest'
-                                ' returned with status code %s!\n'
-                                'Local variables in frame:%s',
-                                response.status_code,
-                                ''.join(['\n * ' + str(x) + ' = ' + str(y)
-                                         for x, y in locals().items()])
-                            )
-    jexc(HTTPBadRequest, message)
-
-
-# Someone requested this
-# Mmm, okay
-@view_config(route_name='teapot', renderer='json')
-def teapot(request):
-    return Response(
-        status="418 I'm a teapot",
-        content_type='application/json')
+            raise HTTPBadRequest(detail=Messages.bad_request)
+        if nickname == '':
+            raise HTTPBadRequest(detail=Messages.empty_nickname)
+        if email == '':
+            raise HTTPBadRequest(detail=Messages.empty_email)
+        if password == '':
+            raise HTTPBadRequest(detail=Messages.empty_password)
+        pass_hash = hashlib.sha512(password.encode()).hexdigest()
+        user = request.db['users'].find_one({'nickname': nickname})
+        if user:
+            raise HTTPBadRequest(detail=Messages.nickname_in_use)
+        user = request.db['users'].find_one({'email': email})
+        if user:
+            raise HTTPBadRequest(detail=Messages.email_in_use)
+        act_phrase = ''.join('{:02x}'.format(x) for x in os.urandom(
+            request.registry.settings
+            ['activation.length']))
+        act_till = (datetime.datetime.now() + datetime.timedelta(
+            seconds=request.registry.settings['activation.time']))
+        subrequest = Request.blank('/users', method='POST', POST=(
+                str(ModelUser(nickname=nickname,
+                              email=email,
+                              password=pass_hash,
+                              activation_phrase=act_phrase,
+                              activation_till=act_till))),
+            content_type='application/json')
+        subrequest.no_permission_check = True
+        response = request.invoke_subrequest(subrequest, use_tweens=True)
+        if response.status_code == 201:
+            # TODO: send activation email
+            raise HTTPOk(body=Messages.account_created_success)
+        else:  # pragma: no cover
+            log.error(
+                'Could not create a user: subrequest'
+                ' returned with status code %s!\n'
+                'Local variables in frame:%s',
+                response.status_code,
+                ''.join(['\n * ' + str(x) + ' = ' + str(y)
+                         for x, y in locals().items()])
+            )
+            raise HTTPInternalServerError(Messages.internal_error)
+    raise HTTPBadRequest(detail=Messages.bad_request)
 
 
 # Package controller
 @view_config(request_method='PATCH',
              context=Package,
-             renderer='json',
              permission='pkg_update')
 def update_package(context, request):
     query = {}
@@ -225,9 +169,9 @@ def update_package(context, request):
             check(v, str, Messages.type_mismatch % (k, 'str',))
             if len([x for x in (request.db['packages']
                                 .find({'name': v}))]) > 0:
-                jexc(HTTPConflict, Messages.pkg_name_conflict)
+                raise HTTPConflict(detail=Messages.pkg_name_conflict)
             if not Constants.name_pattern.match(v):
-                jexc(HTTPBadRequest, Messages.pkg_bad_name)
+                raise HTTPBadRequest(detail=Messages.pkg_bad_name)
         elif k in ['description', 'license']:
             query[k] = check(
                 v, str,
@@ -241,9 +185,9 @@ def update_package(context, request):
                 v, Messages.type_mismatch % (k, 'list of strs',))
             for owner in v:
                 if not Constants.user_pattern.match(owner):
-                    jexc(HTTPBadRequest, Messages.user_bad_name)
+                    raise HTTPBadRequest(detail=Messages.user_bad_name)
             if len(v) == 0:
-                jexc(HTTPBadRequest, Messages.empty_owner_list)
+                raise HTTPBadRequest(detail=Messages.empty_owner_list)
             query[k] = v
         elif k in ['authors', 'tags']:
             query[k] = check_list_of_strs(
@@ -256,7 +200,7 @@ def update_package(context, request):
                 try:
                     num = str(semver.Version.coerce(n))
                 except ValueError as e:
-                    jexc(HTTPBadRequest, str(e))
+                    raise HTTPBadRequest(detail=str(e))
                 if ver is None:
                     if k not in query:
                         query[k] = {}
@@ -269,7 +213,7 @@ def update_package(context, request):
                         if ('depends' not in ver or
                                 'files' not in ver or
                                 'changes' not in ver):
-                            jexc(HTTPBadRequest, Messages.partial_ver)
+                            raise HTTPBadRequest(detail=Messages.partial_ver)
                         else:
                             if k not in query:
                                 query[k] = {}
@@ -305,7 +249,9 @@ def update_package(context, request):
                                         ['files']) and
                                         ('dir' not in file_info or
                                          'name' not in file_info)):
-                                    jexc(HTTPBadRequest, Messages.partial_ver)
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver
+                                    )
                                 if ('dir' in file_info and
                                         check(
                                             file_info['dir'], str,
@@ -347,7 +293,9 @@ def update_package(context, request):
                                         ['depends']) and
                                         ('version' not in dep_info or
                                          'type' not in dep_info)):
-                                    jexc(HTTPBadRequest, Messages.partial_ver)
+                                    raise HTTPBadRequest(
+                                        detail=Messages.partial_ver
+                                    )
                                 if k not in query:
                                     query[k] = {}
                                 if num not in query[k]:
@@ -362,7 +310,7 @@ def update_package(context, request):
                                         try:
                                             semver.Spec(dep_info['version'])
                                         except ValueError as e:
-                                            jexc(HTTPBadRequest, str(e))
+                                            raise HTTPBadRequest(detail=str(e))
                                     if 'type' in dep_info:
                                         check(
                                             dep_info['type'], str,
@@ -373,8 +321,9 @@ def update_package(context, request):
                                                     'optional',
                                                     'required'
                                                 ]:
-                                            jexc(HTTPBadRequest,
-                                                 Messages.wrong_dep_type)
+                                            raise HTTPBadRequest(
+                                                detail=Messages.wrong_dep_type
+                                            )
                                     if 'depends' not in query[k][num]:
                                         query[k][num]['depends'] = {}
                                     if (dep_name not in
@@ -433,45 +382,44 @@ def update_package(context, request):
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent()
 
 
 @view_config(request_method='GET',
              context=Package,
-             renderer='json',
              permission='pkg_view')
 def get_package(context, request):
     r = context.retrieve()
 
     if r is None:
-        jexc(HTTPNotFound)
+        raise HTTPNotFound()
     else:
         context.update({
             '$inc': {
                 'stats.views': 1
             }
         })
+        context.update({
+            '$unset': {
+                'stats.downloads': ""
+            }
+        })
         del r['_id']
-        request.response.content_type = 'application/json'
-        return replace_chars_in_keys(r, Constants.key_replace_char, '.')
+        raise HTTPOk(
+            body=replace_chars_in_keys(r, Constants.key_replace_char, '.'))
 
 
 @view_config(request_method='DELETE',
              context=Package,
-             renderer='json',
              permission='pkg_delete')
 def delete_package(context, request):
     context.delete()
 
-    return Response(
-        status='204 No Content')
+    raise HTTPNoContent()
 
 
 @view_config(request_method='POST',
              context=Packages,
-             renderer='json',
              permission='pkg_create')
 def create_package(context, request):
     try:
@@ -480,28 +428,25 @@ def create_package(context, request):
             data['owners'] = [request.authenticated_userid[1:]]
         pkg = ModelPackage(True, **data)
     except (AttributeError, KeyError, TypeError, ValueError) as e:
-        jexc(HTTPBadRequest, Messages.bad_package % str(e))
+        raise HTTPBadRequest(detail=Messages.bad_package % str(e))
     except HTTPBadRequest:
         raise
     except Exception as e:  # pragma: no cover
         log.warn('Exception caught in create_package: %r.', e)
-        jexc(HTTPBadRequest, Messages.bad_package % "'unknown'")
+        raise HTTPBadRequest(detail=Messages.bad_package % "'unknown'")
     if len([x for x in (request.db['packages']
                         .find({'name': pkg.data['name']}))]) > 0:
-        jexc(HTTPConflict, Messages.pkg_name_conflict)
+        raise HTTPConflict(detail=Messages.pkg_name_conflict)
     if not Constants.name_pattern.match(pkg.data['name']):
-        jexc(HTTPBadRequest, Messages.pkg_bad_name)
+        raise HTTPBadRequest(detail=Messages.pkg_bad_name)
     data = pkg.pkg
     context.create(data)
 
-    return Response(
-        status='201 Created',
-        content_type='application/json')
+    raise HTTPCreated()
 
 
 @view_config(request_method='GET',
              context=Packages,
-             renderer='json',
              permission='pkgs_view')
 def list_packages(context, request):
     params = request.GET.dict_of_lists()
@@ -517,7 +462,6 @@ def list_packages(context, request):
     searcher()
     packages = context.retrieve({})
     found = searcher.search(packages)
-    request.response.content_type = 'application/json'
     result_list = found[offset:offset+length]
     for v in result_list:
         if '_id' in v:
@@ -529,73 +473,61 @@ def list_packages(context, request):
         'sent': len(result_list),
         'truncated': (len(found) > request.registry.settings
                       ['controllers.packages.list_length']),
-        'data': result_list
+        'list': result_list
     }
-    return result
+    raise HTTPOk(body=result)
 
 
 # User controller
 @view_config(request_method='PATCH',
              context=User,
-             renderer='json',
              permission='user_update')
 def update_user(context, request):
     context.update(request.json_body, True)
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent()
 
 
 @view_config(request_method='GET',
              context=User,
-             renderer='json',
              permission='user_get')
 def get_user(context, request):
     r = context.retrieve()
 
     if r is None:
-        jexc(HTTPNotFound)
+        raise HTTPNotFound()
     else:
         data = {
             'nickname': r['nickname'],
             'groups': r['groups']
         }
-        request.response.content_type = 'application/json'
-        return data
+        raise HTTPOk(body=data)
 
 
 @view_config(request_method='DELETE',
              context=User,
-             renderer='json',
              permission='user_delete')
 def delete_user(context, request):
     context.delete()
 
-    return Response(
-        status='204 No Content',
-        content_type='application/json')
+    raise HTTPNoContent()
 
 
 @view_config(request_method='POST',
              context=Users,
-             renderer='json',
              permission='user_create')
 def create_user(context, request):
     try:
         user = ModelUser(True, **request.json_body)
     except:
-        jexc(HTTPBadRequest, Messages.bad_user)
+        raise HTTPBadRequest(detail=Messages.bad_user)
     context.create(user.data)
 
-    return Response(
-        status='201 Created',
-        content_type='application/json')
+    raise HTTPCreated()
 
 
 @view_config(request_method='GET',
              context=Users,
-             renderer='json',
              permission='user_list')
 def list_users(context, request):
     params = request.GET
@@ -629,33 +561,31 @@ def list_users(context, request):
                 retrieved.append(v)
     else:
         retrieved = retrieved_raw
-    request.response.content_type = 'application/json'
     res = retrieved[offset:offset+length]
-    result = []
+    result_list = []
     for v in res:
-        result.append({
+        result_list.append({
                 'nickname': v['nickname'],
                 'groups': v['groups']
             })
-    return result
+
+    result = {
+        'offset': offset,
+        'total': len(retrieved),
+        'sent': len(result_list),
+        'truncated': (len(retrieved) > request.registry.settings
+                      ['controllers.users.list_length']),
+        'list': result_list
+    }
+    raise HTTPOk(body=result)
 
 
-@view_config(route_name='curuser', renderer='json')
+@view_config(route_name='curuser')
 def current_user(context, request):
-    request.response.content_type = 'application/json'
     if request.logged_in:
         user = {
             'nickname': request.user['nickname']
         }
-        request.response.status = '200 OK'
-        return {
-            'success': True,
-            'logged_in': True,
-            'data': user
-        }
+        raise HTTPOk(body=user)
     else:
-        request.response.status = '200 OK'
-        return {
-            'success': True,
-            'logged_in': False
-        }
+        raise HTTPOk(body={})

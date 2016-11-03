@@ -1,7 +1,7 @@
 import json
 
 
-VERSION = '2.1.1'
+VERSION = '3.0.0'
 
 
 def parse_search_phrase(s):
@@ -27,18 +27,3 @@ def parse_search_phrase(s):
     if word:
         result.append(word)
     return result
-
-
-def jexc(http_exc, info=None):
-    if not info:
-        info = http_exc.explanation
-    data = {
-        'message': info,
-        'code': http_exc.code,
-        'title': http_exc.title,
-        'success': False
-    }
-    e = http_exc()
-    e.content_type = 'application/json'
-    e.body = json.dumps(data).encode()
-    raise e

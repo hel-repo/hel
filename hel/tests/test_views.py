@@ -26,8 +26,7 @@ def one_value_param(name):
                         name: []
                     })()
                 except HTTPBadRequest as e:
-                    if (json.loads(e.body.decode('utf-8'))
-                            ['message'] == Messages.no_values % name):
+                    if e.detail == Messages.no_values % name:
                         # Expected exception
                         pass
                     else:
@@ -43,9 +42,7 @@ def one_value_param(name):
                             name: ['hel'] * i
                         })()
                     except HTTPBadRequest as e:
-                        if (json.loads(e.body.decode('utf-8'))
-                                ['message'] == Messages.too_many_values % (
-                                1, i)):
+                        if e.detail == Messages.too_many_values % (1, i):
                             # Expected exception
                             pass
                         else:
@@ -87,8 +84,7 @@ def param(name):
                         name: []
                     })()
                 except HTTPBadRequest as e:
-                    if (json.loads(e.body.decode('utf-8'))
-                            ['message'] == Messages.no_values % name):
+                    if e.detail == Messages.no_values % name:
                         # Expected exception
                         pass
                     else:
@@ -259,7 +255,6 @@ class PkgSearchTests(unittest.TestCase):
         try:
             PackagesSearcher({'hi': ['test']})()
         except HTTPBadRequest as e:
-            self.assertEqual(json.loads(e.body.decode('utf-8'))['message'],
-                             Messages.bad_search_param % 'hi')
+            self.assertEqual(e.detail, Messages.bad_search_param % 'hi')
         else:
             raise AssertionError()
