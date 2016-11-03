@@ -31,7 +31,7 @@ Getting Started - Dev
 - ``$ $VENV/bin/pip install -e .``
 - ``$ $VENV/bin/pserve development.ini``
 
-This will setup and run local copy of hel.
+This will set up and run a local copy of hel.
 http://127.0.0.1:6543/
 
 Testing
