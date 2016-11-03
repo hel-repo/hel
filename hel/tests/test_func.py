@@ -48,95 +48,74 @@ class FunctionalTests(unittest.TestCase):
         from webtest import TestApp
         self.test_app = TestApp(app)
 
-    def test_home(self):
-        res = self.test_app.get('/', status=200)
-        self.assertTrue(len(res.forms) > 0)
-
     def test_unexisting_page(self):
         self.test_app.get('/thispagedoesnotexist', status=404)
 
     def test_bad_log_in(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'password': 'hi',
-                'log-in': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.bad_request)
+                'action': 'log-in'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_failed_log_in(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'password': 'totally-random-passwd',
                 'nickname': '-n0-such-user',
-                'log-in': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
+                'action': 'log-in'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.failed_login)
 
     def test_failed_log_in_empty_nick(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'password': 'hi',
                 'nickname': '',
-                'log-in': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.empty_nickname)
+                'action': 'log-in'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_nickname)
 
     def test_failed_log_in_empty_pass(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'password': '',
                 'nickname': 'test',
-                'log-in': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.empty_password)
+                'action': 'log-in'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_password)
 
     def test_bad_reg(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'email': '',
                 'nickname': '',
-                'register': True
-            }, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.bad_request)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_failed_reg_empty_nick(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'email': '',
                 'nickname': '',
                 'password': '',
-                'register': True
-            }, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.empty_nickname)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_nickname)
 
     def test_failed_reg_empty_email(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'email': '',
                 'nickname': self.user['nickname'],
                 'password': '',
-                'register': True
-            }, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.empty_email)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_email)
 
     def test_failed_reg_empty_password(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'email': self.user['email'],
                 'nickname': self.user['nickname'],
                 'password': '',
-                'register': True
-            }, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.empty_password)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_password)
 
     def test_failed_reg_nick_bad(self):
         res = self.test_app.post_json('/auth', {
@@ -149,11 +128,9 @@ class FunctionalTests(unittest.TestCase):
 
     def test_reg_success(self):
         data = copy.copy(self.user)
-        data['register'] = True
-        res = self.test_app.post('/', data, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.account_created_success)
+        data['action'] = 'register'
+        res = self.test_app.post_json('/auth', data, status=200)
+        self.assertEqual(res.json['data'], Messages.account_created_success)
         client = MongoClient(mongodb_url)
         users = [x for x in client.hel['users'].find()]
         client.close()
@@ -172,11 +149,8 @@ class FunctionalTests(unittest.TestCase):
         },""", status=400)
         self.assertEqual(res.json['message'], Messages.bad_request)
 
-    def test_teapot(self):
-        self.test_app.post('/teapot', status=418)
-
     def test_simple_cors_headers(self):
-        res = self.test_app.post('/', status=200)
+        res = self.test_app.post('/auth', status=400)
         self.assertTrue(any(
             v[0].lower() == 'access-control-allow-origin' and
             v[1] == '*' for v in res.headerlist))
@@ -186,7 +160,7 @@ class FunctionalTests(unittest.TestCase):
         headers.add('Origin', 'http://example.com')
         headers.add('Access-Control-Request-Method', 'POST')
         headers.add('Access-Control-Request-Headers', 'X-HELLO, Content-Type')
-        res = self.test_app.options('/', status=200, headers=headers)
+        res = self.test_app.options('/auth', status=400, headers=headers)
         self.assertTrue(any(
             v[0].lower() == 'access-control-allow-origin' and
             v[1] == 'http://example.com' for v in res.headerlist))
@@ -207,13 +181,10 @@ class FunctionalAuthTests(unittest.TestCase):
 
     def test_failed_log_in_pass(self):
         data = copy.copy(self.user)
-        data['log-in'] = True
+        data['action'] = 'log-in'
         data['password'] = 'blah-blah-blah'
-        res = self.test_app.post('/', data, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.failed_login)
+        res = self.test_app.post_json('/auth', data, status=400)
+        self.assertEqual(res.json['message'], Messages.failed_login)
 
 
 class FunctionalTestsWithAuth(unittest.TestCase):
@@ -226,49 +197,37 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         client.close()
         FunctionalAuthTests.setUp(self)
         data = copy.copy(self.user)
-        data['register'] = True
-        res = self.test_app.post('/', data, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.account_created_success)
+        data['action'] = 'register'
+        res = self.test_app.post_json('/auth', data, status=200)
+        self.assertEqual(res.json['data'], Messages.account_created_success)
         client = MongoClient(mongodb_url)
         users = [x for x in client.hel['users'].find()]
         client.close()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0]['nickname'], data['nickname'])
         data = copy.copy(self.user)
-        data['log-in'] = True
-        res = self.test_app.post('/', data, status=302)
+        data['action'] = 'log-in'
+        res = self.test_app.post_json('/auth', data, status=200)
         headers = res.headers
         auth_headers = ResponseHeaders()
         for k, v in headers.items():
             if k.lower() == 'set-cookie':
                 auth_headers.add('Cookie', v)
-            elif k.lower() not in ['content-type', 'content-length']:
-                auth_headers.add(k, v)
         self.auth_headers = auth_headers
-        res = self.test_app.get('/', headers=auth_headers, status=200)
-        self.assertIsNone(res.html.find(id='login-message'))
-        self.assertIsNone(res.html.find(id='action-log-in'))
-        self.assertIsNone(res.html.find(id='action-register'))
-        self.assertIsNone(res.html.find(id='log-in-form'))
-        self.assertIsNone(res.html.find(id='register-form'))
-        logout = res.html.find(id='log-out')
-        self.assertIsNotNone(logout)
-        self.assertEqual(logout.form.span.span.string, '@' +
-                         self.user['nickname'])
-        self.log_out_status = 302
+        res = self.test_app.get('/auth', headers=auth_headers, status=400)
+        self.assertTrue(res.json['logged_in'])
+        self.log_out_status = 200
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
-        res = self.test_app.post('/', {
-                'log-out': True,
+        res = self.test_app.post_json('/auth', {
+                'action': 'log-out'
             }, headers=self.auth_headers,
             status=self.log_out_status)
         self.auth_headers = None
         auth_headers = res.headers
-        res = self.test_app.get('/', headers=auth_headers, status=200)
-        self.assertIsNotNone(res.html.find(id='login-message'))
+        res = self.test_app.get('/auth', headers=auth_headers, status=400)
+        self.assertFalse(res.json['logged_in'])
         client = MongoClient(mongodb_url)
         client.hel['users'].delete_many({})
         client.close()
@@ -298,7 +257,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         res = self.test_app.get(
             '/users/root',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertIn('hi', data['groups'])
 
     def test_get_non_existing_user(self):
@@ -331,7 +290,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.test_app.delete(
             '/users/root',
             headers=self.auth_headers, status=204)
-        self.log_out_status = 200
+        self.log_out_status = 400
 
     def test_invalid_url(self):
         data = copy.deepcopy(s_pkgs.pkg1).data
@@ -350,12 +309,11 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
     def test_no_actions_performed_logged_in(self):
-        res = self.test_app.post_json('/auth', {
+        self.test_app.post_json('/auth', {
                 'action': 'log-in',
                 'nickname': 'root',
                 'password': 'oh-no'
-            }, headers=self.auth_headers, status=200)
-        self.assertEqual(res.json['message'], 'No actions performed')
+            }, headers=self.auth_headers, status=204)
 
     def test_logged_in_profile(self):
         res = self.test_app.get('/profile',
@@ -374,11 +332,9 @@ class FunctionalTestsWithReg(unittest.TestCase):
         client.close()
         FunctionalAuthTests.setUp(self)
         data = copy.copy(self.user)
-        data['register'] = True
-        res = self.test_app.post('/', data, status=200)
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.account_created_success)
+        data['action'] = 'register'
+        res = self.test_app.post_json('/auth', data, status=200)
+        self.assertEqual(res.json['data'], Messages.account_created_success)
         client = MongoClient(mongodb_url)
         users = [x for x in client.hel['users'].find()]
         client.close()
@@ -386,54 +342,48 @@ class FunctionalTestsWithReg(unittest.TestCase):
         self.assertEqual(users[0]['nickname'], data['nickname'])
 
     def test_failed_reg_nick_use(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'nickname': 'root',
                 'email': 'asd',
                 'password': '...',
-                'register': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.nickname_in_use)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.nickname_in_use)
 
     def test_failed_reg_email_use(self):
-        res = self.test_app.post('/', {
+        res = self.test_app.post_json('/auth', {
                 'nickname': 'root2',
                 'email': 'root@your.pc',
                 'password': '...',
-                'register': True
-            }, status=200)
-        self.assertIsNone(res.html.find(id='log-out'))
-        message = res.html.find(id='login-message')
-        self.assertIsNotNone(message)
-        self.assertEqual(message.string, Messages.email_in_use)
+                'action': 'register'
+            }, status=400)
+        self.assertEqual(res.json['message'], Messages.email_in_use)
 
     def test_lst_users_no_params(self):
         res = self.test_app.get('/users', status=200)
-        data = res.json
-        self.assertEqual(len(data), 1)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 1)
 
     def test_lst_users_group_0(self):
         res = self.test_app.get('/users', {
                 'groups': 'hi'
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data), 0)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 0)
 
     def test_lst_users_offset_99(self):
         res = self.test_app.get('/users', {
                 'offset': 99
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data), 0)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 0)
 
     def test_lst_users_bad_offset(self):
         res = self.test_app.get('/users', {
                 'offset': 'hi'
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data), 1)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 1)
 
     def test_lst_users_group(self):
         client = MongoClient(mongodb_url)
@@ -444,14 +394,14 @@ class FunctionalTestsWithReg(unittest.TestCase):
         res = self.test_app.get('/users', {
                 'groups': 'admins'
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data), 1)
-        self.assertNotIn('password', data[0])
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 1)
+        self.assertNotIn('password', data['list'][0])
 
     def test_logged_out_profile(self):
         res = self.test_app.get('/profile', status=200)
         self.assertFalse(res.json['logged_in'])
-        self.assertNotIn('data', res.json)
+        self.assertEqual({}, res.json['data'])
 
     def tearDown(self):
         FunctionalAuthTests.tearDown(self)
@@ -490,7 +440,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         for i in range(3):
             self.test_app.get('/packages/package-2', status=200)
         res = self.test_app.get('/packages/package-2', status=200)
-        self.assertEqual(res.json['stats']['views'], 3)
+        self.assertEqual(res.json['data']['stats']['views'], 3)
 
     def test_upd_pkg_name_conflict(self):
         res = self.test_app.patch_json('/packages/package-1', {
@@ -543,7 +493,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
                 'owners': ['hi']
             }, headers=self.auth_headers, status=204)
         res = self.test_app.get('/packages/package-1', status=200)
-        self.assertListEqual(res.json['owners'], ['hi'])
+        self.assertListEqual(res.json['data']['owners'], ['hi'])
 
     def test_upd_pkg_license_str(self):
         res = self.test_app.patch_json('/packages/package-2', {
@@ -746,7 +696,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertNotIn('1.0.2', data['versions'])
 
     def test_upd_pkg_ver_v_files_url_none(self):
@@ -762,7 +712,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertNotIn('http://example.com/file15',
                          data['versions']['1.1.0']['files'])
 
@@ -785,7 +735,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertEqual(data['versions']['1.0.0']['depends']['dpackage-4']
                          ['version'], '*')
         self.assertIn('dpackage-42', data['versions']['1.0.0']['depends'])
@@ -836,7 +786,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertIn('http://example.com/file42', data['versions']['1.1.0']
                       ['files'])
         self.assertEqual(data['versions']['1.1.0']['files']
@@ -905,7 +855,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertNotIn('http://img.example.com/img12', data['screenshots'])
 
     def test_upd_pkg_scr(self):
@@ -917,7 +867,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-2',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertIn('http://img.example.com/img20', data['screenshots'])
         self.assertEqual(data['screenshots']['http://img.example.com/img20'],
                          'Hi! :)')
@@ -931,7 +881,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get(
             '/packages/package-1',
             headers=self.auth_headers, status=200)
-        data = res.json
+        data = res.json['data']
         self.assertIn('http://img.example.com/img10', data['screenshots'])
         self.assertEqual(data['screenshots']['http://img.example.com/img10'],
                          '')
@@ -980,39 +930,40 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         res = self.test_app.get('/packages', {
                 'name': 'age pack'
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data['data']), 2)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 2)
 
     def test_lst_pkgs_bad_offset(self):
         res = self.test_app.get('/packages', {
                 'name': 'age pack',
                 'offset': 'hi'
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data['data']), 2)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 2)
 
     def test_lst_pkgs_offset_1(self):
         res = self.test_app.get('/packages', {
                 'name': 'a ge p ck',
                 'offset': 1
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data['data']), 1)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 1)
 
     def test_lst_pkgs_offset_99(self):
         res = self.test_app.get('/packages', {
                 'name': 'a ge - "pack" 2',
                 'offset': 99
             }, status=200)
-        data = res.json
-        self.assertEqual(len(data['data']), 0)
+        data = res.json['data']
+        self.assertEqual(len(data['list']), 0)
 
     def test_get_pkg_date_field(self):
         res = self.test_app.get('/packages/package-1', status=200)
-        self.assertIn('date', res.json['stats'])
-        self.assertIn('created', res.json['stats']['date'])
-        self.assertIn('last-updated', res.json['stats']['date'])
-        self.assertEqual(res.json['stats']['date']['created'],
-                         res.json['stats']['date']['last-updated'])
+        self.assertIn('date', res.json['data']['stats'])
+        self.assertIn('created', res.json['data']['stats']['date'])
+        self.assertIn('last-updated', res.json['data']['stats']['date'])
+        self.assertEqual(res.json['data']['stats']['date']['created'],
+                         res.json['data']['stats']['date']['last-updated'])
         self.assertIsNotNone(datetime.datetime.strptime(
-            res.json['stats']['date']['created'], Constants.date_format))
+            res.json['data']['stats']['date']['created'],
+            Constants.date_format))
