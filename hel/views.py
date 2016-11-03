@@ -468,7 +468,7 @@ def list_packages(context, request):
         'sent': len(result_list),
         'truncated': (len(found) > request.registry.settings
                       ['controllers.packages.list_length']),
-        'data': result_list
+        'list': result_list
     }
     raise HTTPOk(body=result)
 
@@ -557,12 +557,21 @@ def list_users(context, request):
     else:
         retrieved = retrieved_raw
     res = retrieved[offset:offset+length]
-    result = []
+    result_list = []
     for v in res:
-        result.append({
+        result_list.append({
                 'nickname': v['nickname'],
                 'groups': v['groups']
             })
+
+    result = {
+        'offset': offset,
+        'total': len(retrieved),
+        'sent': len(result_list),
+        'truncated': (len(retrieved) > request.registry.settings
+                      ['controllers.users.list_length']),
+        'list': result_list
+    }
     raise HTTPOk(body=result)
 
 
