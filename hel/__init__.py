@@ -133,7 +133,6 @@ def main(global_config, **settings):
     config.add_request_method(is_logged_in, 'logged_in', reify=True)
 
     # Setup routes
-    config.add_route('teapot', '/teapot')
     config.add_route('auth', '/auth')
     config.add_route('curuser', '/profile')
     config.scan()
