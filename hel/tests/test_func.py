@@ -314,7 +314,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                 'nickname': 'root',
                 'password': 'oh-no'
             }, headers=self.auth_headers, status=200)
-        self.assertEqual(res["data"], Messages.already_logged_in)
+        self.assertEqual(res.json["data"], Messages.already_logged_in)
 
     def test_logged_in_profile(self):
         res = self.test_app.get('/profile',
