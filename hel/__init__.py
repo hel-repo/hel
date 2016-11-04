@@ -95,7 +95,7 @@ def main(global_config, **settings):
     if 'AUTH_SECRET' in os.environ:  # pragma: no cover
         auth_secret = os.environ["AUTH_SECRET"]
     authentication_policy = HELAuthenticationPolicy(
-            auth_secret, hashalg='sha512')
+            auth_secret, hashalg='sha512', reissue_time=0)
     authorization_policy = ACLAuthorizationPolicy()
 
     # Custom config settings
