@@ -316,6 +316,13 @@ class FunctionalTestsWithAuth(unittest.TestCase):
             }, headers=self.auth_headers, status=200)
         self.assertEqual(res.json["data"], Messages.already_logged_in)
 
+    def test_bad_action_logged_in(self):
+        res = self.test_app.post_json('/auth', {
+                'action': 'hello-people',
+                'am-i-kidding': false
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"], Messages.bad_request)
+
     def test_logged_in_profile(self):
         res = self.test_app.get('/profile',
                                 headers=self.auth_headers, status=200)
