@@ -309,11 +309,12 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertEqual(res.json['message'], Messages.invalid_uri)
 
     def test_no_actions_performed_logged_in(self):
-        self.test_app.post_json('/auth', {
+        res = self.test_app.post_json('/auth', {
                 'action': 'log-in',
                 'nickname': 'root',
                 'password': 'oh-no'
-            }, headers=self.auth_headers, status=204)
+            }, headers=self.auth_headers, status=200)
+        self.assertEqual(res["data"], Messages.already_logged_in)
 
     def test_logged_in_profile(self):
         res = self.test_app.get('/profile',
