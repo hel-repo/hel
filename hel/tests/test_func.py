@@ -319,7 +319,7 @@ class FunctionalTestsWithAuth(unittest.TestCase):
     def test_bad_action_logged_in(self):
         res = self.test_app.post_json('/auth', {
                 'action': 'hello-people',
-                'am-i-kidding': false
+                'am-i-kidding': False
             }, headers=self.auth_headers, status=400)
         self.assertEqual(res.json["message"], Messages.bad_request)
 
