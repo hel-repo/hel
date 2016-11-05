@@ -1,3 +1,9 @@
+3.0.1
+-----
+- Reissue tickets on every request. They become invalid after log out.
+- Respond with ``200 OK`` instead of ``204 No Content`` if tried to ``log-in`` or ``register`` when logged in.
+- Copypasted a more advanced solution to CORS problem.
+
 3.0.0
 -----
 - Unified responses.
