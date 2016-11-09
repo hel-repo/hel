@@ -82,11 +82,14 @@ def auth(request):
     if 'action' not in params:
         message = Messages.bad_request
     elif request.logged_in:
-        nickname = request.authenticated_userid
         if params['action'] == 'log-out':
+            nickname = request.authenticated_userid
             headers = forget(request)
             raise HTTPOk(body=Messages.logged_out, headers=headers)
-        raise HTTPNoContent()
+        elif params['action'] in ['log-in', 'register']:
+            raise HTTPOk(body=Messages.already_logged_in)
+        else:
+            raise HTTPBadRequest(detail=Messages.bad_request)
     elif params['action'] == 'log-in':
         try:
             nickname = params['nickname'].strip()

@@ -1,6 +1,7 @@
 class Messages:
 
     account_created_success = 'Account created successfully!'
+    already_logged_in = "You're already logged in."
     bad_package = "Bad value %s in the data you provided."
     bad_request = 'Bad request.'
     bad_search_param = 'No such search param: %s.'
