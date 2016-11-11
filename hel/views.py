@@ -175,6 +175,7 @@ def update_package(context, request):
                 raise HTTPConflict(detail=Messages.pkg_name_conflict)
             if not Constants.name_pattern.match(v):
                 raise HTTPBadRequest(detail=Messages.pkg_bad_name)
+            query[k] = v
         elif k in ['description', 'license']:
             query[k] = check(
                 v, str,

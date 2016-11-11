@@ -1,6 +1,7 @@
 3.0.2
 -----
 - Added the PATCH request method to the list of allowed HTTP methods.
+- Added the line of code to actually change the name of a package.
 
 3.0.1
 -----
