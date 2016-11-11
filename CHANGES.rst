@@ -1,3 +1,7 @@
+3.0.2
+-----
+- Added the PATCH request method to the list of allowed HTTP methods.
+
 3.0.1
 -----
 - Reissue tickets on every request. They become invalid after log out.
