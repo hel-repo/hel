@@ -470,6 +470,13 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertEqual(Messages.pkg_bad_name,
                          res.json['message'])
 
+    def test_upd_pkg_name_ok(self):
+        self.test_app.patch_json('/packages/package-1', {
+                'name': 'new-package'
+            }, headers=self.auth_headers, status=204)
+        self.test_app.get('/packages/new-package', status=200)
+        self.test_app.get('/packages/package-1', status=404)
+
     def test_upd_pkg_desc_str(self):
         res = self.test_app.patch_json('/packages/package-2', {
                 'description': ['Hello']
