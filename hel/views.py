@@ -293,7 +293,7 @@ def update_package(context, request):
                                     query[k][num] = {}
                                 if 'depends' not in query[k][num]:
                                     query[k][num]['depends'] = {}
-                                query[k][num]['depends'][url] = None
+                                query[k][num]['depends'][dep_name] = None
                             else:
                                 check(
                                     dep_info, dict,
