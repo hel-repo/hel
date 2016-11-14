@@ -1,3 +1,7 @@
+3.0.3
+-----
+- Added dependency remove code.
+
 3.0.2
 -----
 - Added the PATCH request method to the list of allowed HTTP methods.
