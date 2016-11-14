@@ -16,7 +16,6 @@ from pyramid.httpexceptions import (
     HTTPInternalServerError
 )
 from pyramid.request import Request
-from pyramid.response import Response
 from pyramid.security import forget, remember
 from pyramid.view import view_config
 import semantic_version as semver
@@ -80,7 +79,7 @@ def auth(request):
     except:
         raise HTTPBadRequest(detail=Messages.bad_request)
     if 'action' not in params:
-        message = Messages.bad_request
+        raise HTTPBadRequest(detail=Messages.bad_request)
     elif request.logged_in:
         if params['action'] == 'log-out':
             nickname = request.authenticated_userid
@@ -287,11 +286,19 @@ def update_package(context, request):
                             ver['depends'], dict,
                             Messages.type_mismatch % ('depends', 'dict',))
                         for dep_name, dep_info in ver['depends'].items():
-                            check(
-                                dep_info, dict,
-                                Messages.type_mismatch % (
-                                    'dep_info', 'dict',))
-                            if dep_info:
+                            if dep_info is None:
+                                if k not in query:
+                                    query[k] = {}
+                                if num not in query[k]:
+                                    query[k][num] = {}
+                                if 'depends' not in query[k][num]:
+                                    query[k][num]['depends'] = {}
+                                query[k][num]['depends'][url] = None
+                            else:
+                                check(
+                                    dep_info, dict,
+                                    Messages.type_mismatch % (
+                                        'dep_info', 'dict',))
                                 if ((num not in old['versions'] or
                                         dep_name not in old['versions'][num]
                                         ['depends']) and

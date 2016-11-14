@@ -714,6 +714,20 @@ class FunctionalTestsWithPkg(unittest.TestCase):
             }, headers=self.auth_headers, status=400)
         self.assertEqual(Messages.wrong_dep_type, res.json['message'])
 
+    def test_upd_pkg_ver_v_deps_none(self):
+        self.test_app.patch_json('/packages/package-2', {
+                'versions': {
+                    '1.0.1': {
+                        'depends': {
+                            'dpackage-4': None
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=204)
+        res = self.test_app.get('/packages/package-2', status=200)
+        self.assertNotIn('dpackage-4',
+                         res.json['data']['versions']['1.0.1']['depends'])
+
     def test_upd_pkg_ver_none(self):
         self.test_app.patch_json('/packages/package-2', {
                 'versions': {
