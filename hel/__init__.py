@@ -68,10 +68,11 @@ def add_cors_to_response(event):
 def cors_options_view(context, request):
     response = request.response
     if 'Access-Control-Request-Headers' in request.headers:
+        response.headers['Access-Control-Allow-Headers'] = (
+            request.headers['Access-Control-Request-Headers'])
+    if 'Access-Control-Request-Method' in request.headers:
         response.headers['Access-Control-Allow-Methods'] = (
             'OPTIONS,HEAD,GET,POST,PUT,DELETE,PATCH')
-    response.headers['Access-Control-Allow-Headers'] = (
-        request.headers['Access-Control-Request-Headers'])
     return response
 
 

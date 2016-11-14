@@ -171,6 +171,18 @@ class FunctionalTests(unittest.TestCase):
             v[0].lower() == 'access-control-allow-headers' and
             'X-HELLO, Content-Type' in v[1] for v in res.headerlist))
 
+    def test_preflight_cors_headers_partial(self):
+        headers = ResponseHeaders()
+        headers.add('Origin', 'http://example.com')
+        headers.add('Access-Control-Request-Method', 'POST')
+        res = self.test_app.options('/auth', status=200, headers=headers)
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-origin' and
+            v[1] == 'http://example.com' for v in res.headerlist))
+        self.assertTrue(any(
+            v[0].lower() == 'access-control-allow-methods' and
+            'POST' in v[1] for v in res.headerlist))
+
 
 class FunctionalAuthTests(unittest.TestCase):
 

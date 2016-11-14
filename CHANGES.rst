@@ -2,6 +2,7 @@
 -----
 - Added the PATCH request method to the list of allowed HTTP methods.
 - Added the line of code to actually change the name of a package.
+- Fixed crash when sending preflight CORS request without ``Access-Control-Request-Headers``.
 
 3.0.1
 -----
