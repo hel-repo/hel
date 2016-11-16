@@ -23,7 +23,7 @@ class HELAuthenticationPolicy(Policy):
                 principals += ['activated']
         elif (hasattr(request, 'no_permission_check') and
                 request.no_permission_check):
-            principals += ['~allperms']
+            principals += ['~system']
         return principals
 
     def remember(self, request, nickname):
