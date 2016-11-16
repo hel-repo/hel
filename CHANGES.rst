@@ -1,6 +1,9 @@
 3.0.3
 -----
 - Added dependency remove code.
+- Refactored the code of package update route a bit.
+- Removed compatibility code.
+- Removed an ACE granting all permissions to ``~allperms``.
 
 3.0.2
 -----
