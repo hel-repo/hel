@@ -23,7 +23,6 @@ class Resource(dict):
         return [
             (Allow, '~admins', ALL_PERMISSIONS,),
             (Allow, '~system', ALL_PERMISSIONS,),
-            (Allow, '~allperms', ALL_PERMISSIONS,),
             (Allow, Everyone, 'pkg_view',),
             (Allow, Everyone, 'pkgs_view',),
             (Allow, Authenticated, 'pkg_create',),  # TODO: Activated only
