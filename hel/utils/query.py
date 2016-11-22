@@ -77,6 +77,17 @@ class PackagesSearchParams:
 
         return search
 
+    def owners(param):
+
+        def search(pkg):
+            success = True
+            for rq_owner in param:
+                if rq_owner not in pkg['owners']:
+                    return False
+            return True
+
+        return search
+
     @_only_one_param
     def license(param):
         """Search by license"""

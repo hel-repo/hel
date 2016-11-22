@@ -174,6 +174,15 @@ class PkgSearchTests(unittest.TestCase):
             ('Kjers', [self.pkg2],)
         ]
 
+    @param('owners')
+    def test_pkg_search_owners(self):
+        return [
+            (['root'], [self.pkg1, self.pkg2, self.pkg3],),
+            (['test'], [],),
+            (['root', 'test'], [],),
+            (['root', 'crackes'], [self.pkg1],)
+        ]
+
     @one_value_param('screen_desc')
     def test_pkg_search_screen_desc(self):
         return [

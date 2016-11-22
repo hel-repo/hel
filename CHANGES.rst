@@ -1,3 +1,7 @@
+3.1.0
+-----
+- Added ``owners`` search param.
+
 3.0.3
 -----
 - Added dependency remove code.
