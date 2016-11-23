@@ -164,6 +164,10 @@ def auth(request):
              context=Package,
              permission='pkg_update')
 def update_package(context, request):
+    try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
     query = {}
     old = replace_chars_in_keys(
         context.retrieve(), Constants.key_replace_char, '.')
@@ -392,6 +396,10 @@ def delete_package(context, request):
              permission='pkg_create')
 def create_package(context, request):
     try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
+    try:
         data = copy.deepcopy(request.json_body)
         if 'owners' not in data:
             data['owners'] = [request.authenticated_userid[1:]]
@@ -452,6 +460,10 @@ def list_packages(context, request):
              context=User,
              permission='user_update')
 def update_user(context, request):
+    try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
     query = {}
     old = context.retrieve()
     for k, v in request.json_body.items():
