@@ -253,6 +253,11 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                 'blah': 'blah'
             }, headers=self.auth_headers, status=400)
 
+    def test_get_user(self):
+        res = self.test_app.get('/users/root',
+                                headers=self.auth_headers, status=200)
+        self.assertEqual(res.json['data']['nickname'], 'root')
+
     def test_upd_user(self):
         client = MongoClient(mongodb_url)
         client.hel['users'].update(
@@ -260,17 +265,73 @@ class FunctionalTestsWithAuth(unittest.TestCase):
             {'$set': {'groups': ['admins']}})
         client.close()
         self.test_app.patch_json('/users/root', {
-                '$set': {
-                    'groups': [
-                        'hi'
-                    ]
-                }
+                'nickname': 'square-root',
+                'groups': ['hi']
             }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
-            '/users/root',
+            '/users',
             headers=self.auth_headers, status=200)
-        data = res.json['data']
-        self.assertIn('hi', data['groups'])
+        data = res.json['data']['list']
+        user_dict = {}
+        for v in data:
+            user_dict[v['nickname']] = v
+        self.assertIn('square-root', user_dict)
+        self.assertIn('hi', user_dict['square-root']['groups'])
+        self.log_out_status = 400
+
+    def test_upd_user_bad_name(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': '-n87`\\a'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"], Messages.user_bad_name)
+
+    def test_upd_user_name_conflict(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.hel['users'].insert_one({'nickname': 'square-root',
+                                        'email': 'square@root.maths',
+                                        'password': 'squareit!',
+                                        'activation_phrase': 'test',
+                                        'activation_till': 'test',
+                                        'groups': []})
+        client.close()
+        self.test_app.get('/users/square-root',
+                          headers=self.auth_headers, status=200)
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': 'square-root'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"], Messages.nickname_in_use)
+
+    def test_upd_user_nick_type(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': ['test']
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"],
+                         Messages.type_mismatch % ('nickname', 'str',))
+
+    def test_upd_user_group_type(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'groups': 'test'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"],
+                         Messages.type_mismatch % ('groups', 'list of strs',))
 
     def test_get_non_existing_user(self):
         client = MongoClient(mongodb_url)
