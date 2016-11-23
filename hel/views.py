@@ -164,6 +164,8 @@ def auth(request):
              context=Package,
              permission='pkg_update')
 def update_package(context, request):
+    if context.retrieve() is None:
+        raise HTTPNotFound()
     try:
         params = request.json_body
     except:
@@ -460,6 +462,8 @@ def list_packages(context, request):
              context=User,
              permission='user_update')
 def update_user(context, request):
+    if context.retrieve() is None:
+        raise HTTPNotFound()
     try:
         params = request.json_body
     except:
@@ -507,6 +511,8 @@ def get_user(context, request):
              context=User,
              permission='user_delete')
 def delete_user(context, request):
+    if context.retrieve() is None:
+        raise HTTPNotFound()
     context.delete()
 
     raise HTTPNoContent()
