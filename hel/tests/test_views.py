@@ -260,6 +260,15 @@ class PkgSearchTests(unittest.TestCase):
             (['http://img.example.com/img32'], [self.pkg3],)
         ]
 
+    @one_value_param('q')
+    def test_pkg_search_q(self):
+        return [
+            ('root', [self.pkg1, self.pkg2, self.pkg3],),
+            ('Change package "My first"', [self.pkg1],),
+            ('hello people xD', [],),
+            ('test img-2 2 21.', [self.pkg2],)
+        ]
+
     def test_bad_search_param(self):
         try:
             PackagesSearcher({'hi': ['test']})()

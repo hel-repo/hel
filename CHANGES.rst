@@ -1,6 +1,7 @@
 3.1.0
 -----
 - Added ``owners`` search param.
+- Added ``q`` search param.
 - Added group ``~banned``.
 
 3.0.3
