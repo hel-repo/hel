@@ -1,5 +1,11 @@
 from bson.objectid import ObjectId
-from pyramid.security import Allow, Everyone, Authenticated, ALL_PERMISSIONS
+from pyramid.security import (
+    Allow,
+    Deny,
+    Everyone,
+    Authenticated,
+    ALL_PERMISSIONS
+)
 from pyramid.traversal import find_root
 
 
@@ -25,8 +31,10 @@ class Resource(dict):
             (Allow, '~system', ALL_PERMISSIONS,),
             (Allow, Everyone, 'pkg_view',),
             (Allow, Everyone, 'pkgs_view',),
+            (Deny, '~banned', 'pkg_create',),
             (Allow, Authenticated, 'pkg_create',),  # TODO: Activated only
-            (Allow, Everyone, 'user_list',)
+            (Allow, Everyone, 'user_list',),
+            (Deny, '~banned', ALL_PERMISSIONS,)
         ]
 
 

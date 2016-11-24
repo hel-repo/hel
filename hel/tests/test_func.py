@@ -253,6 +253,30 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                 'blah': 'blah'
             }, headers=self.auth_headers, status=400)
 
+    def test_get_user(self):
+        res = self.test_app.get('/users/root',
+                                headers=self.auth_headers, status=200)
+        self.assertEqual(res.json['data']['nickname'], 'root')
+
+    def test_upd_user_404(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        self.test_app.patch_json('/users/no-such-user', {},
+                                 headers=self.auth_headers, status=404)
+
+    def test_upd_user_malformed_json(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch('/users/root', '''oh"ai''',
+                                  headers=self.auth_headers, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
+
     def test_upd_user(self):
         client = MongoClient(mongodb_url)
         client.hel['users'].update(
@@ -260,17 +284,73 @@ class FunctionalTestsWithAuth(unittest.TestCase):
             {'$set': {'groups': ['admins']}})
         client.close()
         self.test_app.patch_json('/users/root', {
-                '$set': {
-                    'groups': [
-                        'hi'
-                    ]
-                }
+                'nickname': 'square-root',
+                'groups': ['hi']
             }, headers=self.auth_headers, status=204)
         res = self.test_app.get(
-            '/users/root',
+            '/users',
             headers=self.auth_headers, status=200)
-        data = res.json['data']
-        self.assertIn('hi', data['groups'])
+        data = res.json['data']['list']
+        user_dict = {}
+        for v in data:
+            user_dict[v['nickname']] = v
+        self.assertIn('square-root', user_dict)
+        self.assertIn('hi', user_dict['square-root']['groups'])
+        self.log_out_status = 400
+
+    def test_upd_user_bad_name(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': '-n87`\\a'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"], Messages.user_bad_name)
+
+    def test_upd_user_name_conflict(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.hel['users'].insert_one({'nickname': 'square-root',
+                                        'email': 'square@root.maths',
+                                        'password': 'squareit!',
+                                        'activation_phrase': 'test',
+                                        'activation_till': 'test',
+                                        'groups': []})
+        client.close()
+        self.test_app.get('/users/square-root',
+                          headers=self.auth_headers, status=200)
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': 'square-root'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"], Messages.nickname_in_use)
+
+    def test_upd_user_nick_type(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'nickname': ['test']
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"],
+                         Messages.type_mismatch % ('nickname', 'str',))
+
+    def test_upd_user_group_type(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch_json('/users/root', {
+                'groups': 'test'
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json["message"],
+                         Messages.type_mismatch % ('groups', 'list of strs',))
 
     def test_get_non_existing_user(self):
         client = MongoClient(mongodb_url)
@@ -292,6 +372,15 @@ class FunctionalTestsWithAuth(unittest.TestCase):
                 'nickname': 'hi'
             }, headers=self.auth_headers, status=400)
         self.assertEqual(Messages.bad_user, res.json['message'])
+
+    def test_del_user_404(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        self.test_app.delete('/users/no-such-user',
+                             headers=self.auth_headers, status=404)
 
     def test_del_user(self):
         client = MongoClient(mongodb_url)
@@ -461,6 +550,26 @@ class FunctionalTestsWithPkg(unittest.TestCase):
             self.test_app.get('/packages/package-2', status=200)
         res = self.test_app.get('/packages/package-2', status=200)
         self.assertEqual(res.json['data']['stats']['views'], 3)
+
+    def test_upd_pkg_404(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        self.test_app.patch_json('/packages/no-such-package', {
+                'name': 'hi'
+            }, headers=self.auth_headers, status=404)
+
+    def test_upd_pkg_malformed_json(self):
+        client = MongoClient(mongodb_url)
+        client.hel['users'].update(
+            {'nickname': 'root'},
+            {'$set': {'groups': ['admins']}})
+        client.close()
+        res = self.test_app.patch('/packages/package-1', '''oh"ai''',
+                                  headers=self.auth_headers, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_upd_pkg_name_conflict(self):
         res = self.test_app.patch_json('/packages/package-1', {
@@ -934,6 +1043,12 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.test_app.delete(
             '/packages/package-2',
             headers=self.auth_headers, status=204)
+        self.test_app.get('/packages/package-2', status=404)
+
+    def test_crt_pkg_malformed_json(self):
+        res = self.test_app.post('/packages', '''oh"ai''',
+                                 headers=self.auth_headers, status=400)
+        self.assertEqual(res.json['message'], Messages.bad_request)
 
     def test_crt_pkg_owners_bad_user(self):
         pkg = copy.deepcopy(self.pkg3.data)

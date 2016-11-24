@@ -77,6 +77,17 @@ class PackagesSearchParams:
 
         return search
 
+    def owners(param):
+
+        def search(pkg):
+            success = True
+            for rq_owner in param:
+                if rq_owner not in pkg['owners']:
+                    return False
+            return True
+
+        return search
+
     @_only_one_param
     def license(param):
         """Search by license"""
@@ -233,6 +244,53 @@ class PackagesSearchParams:
                     success = False
                     break
             return success
+
+        return search
+
+    @_only_one_param
+    def q(param):
+
+        def search(pkg):
+            phrases = parse_search_phrase(param)
+            for phrase in phrases:
+                found = False
+                for k in ["name", "description", "short_description"]:
+                    if phrase in pkg[k]:
+                        found = True
+                        break
+                if found:
+                    continue
+
+                for k in ["owners", "authors", "license", "tags"]:
+                    for v in pkg[k]:
+                        if phrase in v:
+                            found = True
+                            break
+                    if found:
+                        break
+                if found:
+                    continue
+
+                for k, screenshot in pkg["screenshots"].items():
+                    if phrase in screenshot:
+                        found = True
+                        break
+                if found:
+                    continue
+
+                for k, version in pkg["versions"].items():
+                    if phrase in version["changes"]:
+                        found = True
+                        break
+                if found:
+                    continue
+
+                # If we reached this line, `continue` lines weren't executed.
+                # It means that the phrase was not found.
+                # As all phrases must be found, we terminate the loop.
+                return False
+
+            return True
 
         return search
 

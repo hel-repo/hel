@@ -21,6 +21,7 @@ from pyramid.view import view_config
 import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
+from hel.utils import update
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -163,6 +164,12 @@ def auth(request):
              context=Package,
              permission='pkg_update')
 def update_package(context, request):
+    if context.retrieve() is None:
+        raise HTTPNotFound()
+    try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
     query = {}
     old = replace_chars_in_keys(
         context.retrieve(), Constants.key_replace_char, '.')
@@ -351,24 +358,7 @@ def update_package(context, request):
     query.setdefault('stats', {}).setdefault('date', {})['last-updated'] = (
             datetime.datetime.utcnow().strftime(Constants.date_format))
 
-    def r(d, nd):
-        if type(d) == dict and type(nd) == dict:
-            result = copy.copy(d)
-            for k, v in nd.items():
-                if k in d:
-                    data = r(d[k], v)
-                    if data is not None:
-                        result[k] = data
-                    else:
-                        del result[k]
-                else:
-                    if v is not None:
-                        result[k] = v
-            return result
-        else:
-            return nd
-
-    query = r(old, query)
+    query = update(old, query)
     query = replace_chars_in_keys(query, '.', Constants.key_replace_char)
     context.update(query, True)
 
@@ -407,6 +397,10 @@ def delete_package(context, request):
              context=Packages,
              permission='pkg_create')
 def create_package(context, request):
+    try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
     try:
         data = copy.deepcopy(request.json_body)
         if 'owners' not in data:
@@ -468,7 +462,31 @@ def list_packages(context, request):
              context=User,
              permission='user_update')
 def update_user(context, request):
-    context.update(request.json_body, True)
+    if context.retrieve() is None:
+        raise HTTPNotFound()
+    try:
+        params = request.json_body
+    except:
+        raise HTTPBadRequest(detail=Messages.bad_request)
+    query = {}
+    old = context.retrieve()
+    for k, v in request.json_body.items():
+        if k == "nickname":
+            check(v, str, Messages.type_mismatch % (k, "str",))
+            if not Constants.user_pattern.match(v):
+                raise HTTPBadRequest(detail=Messages.user_bad_name)
+            print(v)
+            user = request.db['users'].find_one({'nickname': v})
+            print(user)
+            if user:
+                raise HTTPBadRequest(detail=Messages.nickname_in_use)
+            query[k] = v
+        elif k == "groups":
+            check_list_of_strs(v,
+                               Messages.type_mismatch % (k, "list of strs",))
+            query[k] = v
+    query = update(old, query)
+    context.update(query, True)
 
     raise HTTPNoContent()
 
@@ -493,6 +511,8 @@ def get_user(context, request):
              context=User,
              permission='user_delete')
 def delete_user(context, request):
+    if context.retrieve() is None:
+        raise HTTPNotFound()
     context.delete()
 
     raise HTTPNoContent()

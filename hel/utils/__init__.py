@@ -1,7 +1,8 @@
+import copy
 import json
 
 
-VERSION = '3.0.3'
+VERSION = '3.1.0'
 
 
 def parse_search_phrase(s):
@@ -27,3 +28,21 @@ def parse_search_phrase(s):
     if word:
         result.append(word)
     return result
+
+
+def update(d, nd):
+    if type(d) == dict and type(nd) == dict:
+        result = copy.copy(d)
+        for k, v in nd.items():
+            if k in d:
+                data = update(d[k], v)
+                if data is not None:
+                    result[k] = data
+                else:
+                    del result[k]
+            else:
+                if v is not None:
+                    result[k] = v
+        return result
+    else:
+        return nd
