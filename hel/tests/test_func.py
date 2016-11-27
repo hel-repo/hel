@@ -352,6 +352,42 @@ class FunctionalTestsWithAuth(unittest.TestCase):
         self.assertEqual(res.json["message"],
                          Messages.type_mismatch % ('groups', 'list of strs',))
 
+    def test_upd_user_no_permission_nick(self):
+        self.test_app.patch_json('/users/root', {
+                'nickname': 'square-root'
+            }, headers=self.auth_headers, status=403)
+
+    def test_upd_user_no_permission_groups(self):
+        self.test_app.patch_json('/users/root', {
+                'groups': ['hi'],
+            }, headers=self.auth_headers, status=403)
+
+    def test_upd_user_passwd_empty(self):
+        res = self.test_app.patch_json('/users/root', {
+                'password': '',
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(res.json['message'], Messages.empty_password)
+
+    def test_upd_user_passwd(self):
+        self.test_app.patch_json('/users/root', {
+                'password': 'new-passwd',
+            }, headers=self.auth_headers, status=204)
+        self.test_app.post_json('/auth', {
+                'action': 'log-out'
+            }, headers=self.auth_headers, status=200)
+        data = copy.copy(self.user)
+        data['password'] = 'new-passwd'
+        data['action'] = 'log-in'
+        res = self.test_app.post_json('/auth', data, status=200)
+        headers = res.headers
+        auth_headers = ResponseHeaders()
+        for k, v in headers.items():
+            if k.lower() == 'set-cookie':
+                auth_headers.add('Cookie', v)
+        self.auth_headers = auth_headers
+        res = self.test_app.get('/auth', headers=auth_headers, status=400)
+        self.assertTrue(res.json['logged_in'])
+
     def test_get_non_existing_user(self):
         client = MongoClient(mongodb_url)
         client.hel['users'].update(

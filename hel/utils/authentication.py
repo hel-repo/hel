@@ -1,5 +1,6 @@
 from pyramid.authentication import AuthTktAuthenticationPolicy as Policy
-from pyramid.security import Everyone, Authenticated
+from pyramid.httpexceptions import HTTPForbidden
+from pyramid.security import ACLAllowed, Everyone, Authenticated
 
 
 class HELAuthenticationPolicy(Policy):
@@ -67,3 +68,9 @@ def is_logged_in(request):
     if Authenticated in request.effective_principals:
         return True
     return False
+
+
+def has_permission(request, permission, context=None):
+    if request.has_permission(permission, context):
+        return True
+    raise HTTPForbidden
