@@ -29,8 +29,6 @@ class Resource(dict):
         return [
             (Allow, '~admins', ALL_PERMISSIONS,),
             (Allow, '~system', ALL_PERMISSIONS,),
-            (Allow, '~admins', 'user_update_admin',),
-            (Allow, '~system', 'user_update_admin',),
             (Allow, Everyone, 'pkg_view',),
             (Allow, Everyone, 'pkgs_view',),
             (Deny, '~banned', 'pkg_create',),
