@@ -255,7 +255,7 @@ class PackagesSearchParams:
             for phrase in phrases:
                 found = False
                 for k in ["name", "description", "short_description"]:
-                    if phrase in pkg[k]:
+                    if phrase in pkg[k].lower():
                         found = True
                         break
                 if found:
@@ -263,7 +263,7 @@ class PackagesSearchParams:
 
                 for k in ["owners", "authors", "license", "tags"]:
                     for v in pkg[k]:
-                        if phrase in v:
+                        if phrase in v.lower():
                             found = True
                             break
                     if found:
@@ -272,14 +272,14 @@ class PackagesSearchParams:
                     continue
 
                 for k, screenshot in pkg["screenshots"].items():
-                    if phrase in screenshot:
+                    if phrase in screenshot.lower():
                         found = True
                         break
                 if found:
                     continue
 
                 for k, version in pkg["versions"].items():
-                    if phrase in version["changes"]:
+                    if phrase in version["changes"].lower():
                         found = True
                         break
                 if found:

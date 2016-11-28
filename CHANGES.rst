@@ -1,6 +1,7 @@
 3.2.0
 -----
 - Made it possible to change user password.
+- Made ``q`` search param case-insensitive.
 
 3.1.0
 -----
