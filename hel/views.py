@@ -22,6 +22,7 @@ import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils import update
+from hel.utils.authentication import has_permission
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -472,19 +473,25 @@ def update_user(context, request):
     old = context.retrieve()
     for k, v in request.json_body.items():
         if k == "nickname":
+            has_permission(request, 'user_update_admin')
             check(v, str, Messages.type_mismatch % (k, "str",))
             if not Constants.user_pattern.match(v):
                 raise HTTPBadRequest(detail=Messages.user_bad_name)
-            print(v)
             user = request.db['users'].find_one({'nickname': v})
-            print(user)
             if user:
                 raise HTTPBadRequest(detail=Messages.nickname_in_use)
             query[k] = v
         elif k == "groups":
+            has_permission(request, 'user_update_admin')
             check_list_of_strs(v,
                                Messages.type_mismatch % (k, "list of strs",))
             query[k] = v
+        elif k == "password":
+            # TODO: send email
+            if v == '':
+                raise HTTPBadRequest(detail=Messages.empty_password)
+            pass_hash = hashlib.sha512(v.encode()).hexdigest()
+            query[k] = pass_hash
     query = update(old, query)
     context.update(query, True)
 
