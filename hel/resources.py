@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from bson.objectid import ObjectId
 from pyramid.security import (
     Allow,

@@ -26,7 +26,8 @@ Getting Started - Dev
 - Install python>=3.3, MongoDB 3.2
 - Clone Hel git repository to local directory
 - ``$ export VENV=<full path to directory containing hel project>/env``
-- ``$ python3 -m venv $VENV``
+- ``$ pip3 install virtualenv``
+- ``$ python3 -m virtualenv $VENV``
 - ``$ cd <directory containing this file>``
 - ``$ $VENV/bin/pip install -e .``
 - ``$ $VENV/bin/pserve development.ini``

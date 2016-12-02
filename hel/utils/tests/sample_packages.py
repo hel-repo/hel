@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from hel.utils.models import ModelPackage
 
 
