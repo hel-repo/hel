@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Only standard libraries at the top, as this file also gets loaded by
 # the setup script. At such moment, e.g., pyramid doesn't exist,
 # and will cause a crash of installation.

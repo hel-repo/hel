@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pyramid.authentication import AuthTktAuthenticationPolicy as Policy
 from pyramid.httpexceptions import HTTPForbidden
 from pyramid.security import ACLAllowed, Everyone, Authenticated

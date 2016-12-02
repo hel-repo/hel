@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class Messages:
 
     account_created_success = 'Account created successfully!'
