@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 import datetime
 import json
+import os.path
 
 from pyramid.httpexceptions import HTTPBadRequest
 import semantic_version as semver
 
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
-from hel.utils.query import replace_chars_in_keys, parse_url
+from hel.utils.query import (
+    replace_chars_in_keys,
+    parse_url,
+    split_path,
+    check_path,
+    check_filename
+)
 
 
 class ModelPackage:
@@ -59,9 +66,27 @@ class ModelPackage:
                     files = {}
                     for file_url_unchecked, f in value['files'].items():
                         file_url = parse_url(file_url_unchecked)
+                        file_dir = file_name = file_path = None
+                        if ('path' not in f and
+                                'dir' not in f and
+                                'name' not in f):
+                            f['path']  # raise an error
+                        if 'path' in f:
+                            check_path(str(f['path']))
+                            file_path = os.path.join('/', str(f['path']))
+                            file_dir, file_name = split_path(file_path)
+                        else:
+                            check_path(str(f['name']))
+                            check_filename(str(f['name']))
+                            file_dir, file_name = str(f['dir']), str(f['name'])
+                            file_path = os.path.join('/', f['dir'], f['name'])
+                        file_dir = os.path.normpath(file_dir)
+                        file_name = os.path.normpath(file_name)
+                        file_path = os.path.normpath(file_path)
                         files[str(file_url)] = {
-                            'dir': str(f['dir']),
-                            'name': str(f['name'])
+                            'dir': file_dir,
+                            'name': file_name,
+                            'path': file_path
                         }
                     dependencies = {}
                     for dep_name, dep_info in value['depends'].items():
