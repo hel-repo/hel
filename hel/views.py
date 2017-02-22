@@ -4,6 +4,7 @@ import datetime
 import hashlib
 import logging
 import os
+import os.path
 
 from pyramid.httpexceptions import (
     HTTPBadRequest,
@@ -32,7 +33,10 @@ from hel.utils.query import (
     check,
     check_list_of_strs,
     parse_url,
-    replace_chars_in_keys
+    replace_chars_in_keys,
+    check_path,
+    split_path,
+    check_filename
 )
 
 
@@ -253,17 +257,48 @@ def update_package(context, request):
                               Messages.type_mismatch % ('file_info', 'dict',))
                         if ((num not in old['versions'] or
                                 url not in old['versions'][num]['files']) and
-                                ('dir' not in file_info or
-                                 'name' not in file_info)):
+                                (('dir' not in file_info or
+                                  'name' not in file_info) and
+                                 'path' not in file_info)):
                             raise HTTPBadRequest(detail=Messages.partial_ver)
-                        if ('dir' in file_info and
-                                check(file_info['dir'], str,
-                                      Messages.type_mismatch % (
-                                          'file_dir', 'str',)) or
-                                'name' in file_info and
-                                check(file_info['name'], str,
-                                      Messages.type_mismatch % (
-                                          'file_name', 'str',))):
+                        if ('path' in file_info and
+                                check(file_info['path'], str,
+                                      Messages.type_mismatch % ('file_path',
+                                                                'str',)) and
+                                check_path(file_info['path'])):
+                            if k not in query:
+                                query[k] = {}
+                            if num not in query[k]:
+                                query[k][num] = {}
+                            if 'files' not in query[k][num]:
+                                query[k][num]['files'] = {}
+                            if url not in query[k][num]['files']:
+                                query[k][num]['files'][url] = {}
+                            (query[k][num]['files'][url]
+                             ['path']) = os.path.join('/', file_info['path'])
+                            (query[k][num]['files'][url]['dir'],
+                             query[k][num]['files'][url]['name']) = (
+                                 split_path(os.path.join('/',
+                                                         file_info['path'])))
+                            query[k][num]['files'][url]['path'] = (
+                                os.path.normpath(query[k][num]['files'][url]
+                                                 ['path']))
+                            query[k][num]['files'][url]['dir'] = (
+                                os.path.normpath(query[k][num]['files'][url]
+                                                 ['dir']))
+                            query[k][num]['files'][url]['name'] = (
+                                os.path.normpath(query[k][num]['files'][url]
+                                                 ['name']))
+                        elif ('dir' in file_info and
+                              check(file_info['dir'], str,
+                                    Messages.type_mismatch % ('file_dir',
+                                                              'str',)) or
+                              'name' in file_info and
+                              check(file_info['name'], str,
+                                    Messages.type_mismatch % ('file_name',
+                                                              'str',)) and
+                              check_path(file_info['name']) and
+                              check_filename(file_info['name'])):
                             if k not in query:
                                 query[k] = {}
                             if num not in query[k]:
@@ -273,12 +308,23 @@ def update_package(context, request):
                             if url not in query[k][num]['files']:
                                 (query[k][num]['files']
                                  [url]) = {}
-                        if 'dir' in file_info:
-                            (query[k][num]['files']
-                             [url]['dir']) = file_info['dir']
-                        if 'name' in file_info:
-                            (query[k][num]['files']
-                             [url]['name']) = file_info['name']
+                            path = None
+                            if 'dir' in file_info:
+                                (query[k][num]['files']
+                                 [url]['dir']) = os.path.normpath(
+                                     os.path.join('/', file_info['dir']))
+                                path = query[k][num]['files'][url]['dir']
+                            else:
+                                path = old[k][num]['files'][url]['dir']
+                            if 'name' in file_info:
+                                (query[k][num]['files']
+                                 [url]['name']) = file_info['name']
+                                path = os.path.join(path, file_info['name'])
+                            else:
+                                path = os.path.normpath(os.path.join(
+                                    path,
+                                    old[k][num]['files'][url]['name']))
+                            query[k][num]['files'][url]['path'] = path
 
                 if 'depends' in ver:
                     check(ver['depends'], dict,

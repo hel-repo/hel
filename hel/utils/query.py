@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os.path
+
 from pyramid.httpexceptions import HTTPBadRequest
 import rfc3987
 
@@ -377,3 +379,19 @@ def parse_url(url):
     matches['path'] = matches['path'] or '/'
     matches['fragment'] = None
     return rfc3987.compose(**matches)
+
+
+def check_path(path):
+    if path[-1] == '/':
+        raise HTTPBadRequest(detail=Messages.bad_path)
+    return True
+
+
+def split_path(path):
+    return os.path.split(os.path.join('/', path))
+
+
+def check_filename(name):
+    if name.find('/') != -1:
+        raise HTTPBadRequest(detail=Messages.bad_path)
+    return True

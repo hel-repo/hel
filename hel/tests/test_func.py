@@ -775,6 +775,97 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertEqual(Messages.type_mismatch % ('file_name', 'str',),
                          res.json['message'])
 
+    def test_upd_pkg_ver_v_files_name_bad(self):
+        res = self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'name': 'hey/there'
+                            }
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.bad_path, res.json['message'])
+
+    def test_upd_pkg_ver_v_files_path_bad(self):
+        res = self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'path': '/hey/there/'
+                            }
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.bad_path, res.json['message'])
+
+    def test_upd_pkg_ver_v_files_path(self):
+        self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'path': 'hey/there'
+                            }
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=204)
+        res = self.test_app.get('/packages/package-1', status=200)
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['path']), '/hey/there')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['dir']), '/hey')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['name']), 'there')
+
+    def test_upd_pkg_ver_v_files_name_to_path(self):
+        self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'name': 'new-name'
+                            }
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=204)
+        res = self.test_app.get('/packages/package-1', status=200)
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['path']),
+                         '/lib/new-name')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['dir']), '/lib')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['name']), 'new-name')
+
+    def test_upd_pkg_ver_v_files_dir_to_path(self):
+        self.test_app.patch_json('/packages/package-1', {
+                'versions': {
+                    '1.1.1': {
+                        'files': {
+                            'http://example.com/file18': {
+                                'dir': 'opt'
+                            }
+                        }
+                    }
+                }
+            }, headers=self.auth_headers, status=204)
+        res = self.test_app.get('/packages/package-1', status=200)
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['path']),
+                         '/opt/test-1-file-8')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['dir']), '/opt')
+        self.assertEqual((res.json['data']['versions']['1.1.1']['files']
+                          ['http://example.com/file18']['name']),
+                         'test-1-file-8')
+
     def test_upd_pkg_ver_v_deps_dict(self):
         res = self.test_app.patch_json('/packages/package-2', {
                 'versions': {
@@ -1104,7 +1195,7 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertEqual(Messages.empty_owner_list, res.json['message'])
 
     def test_crt_pkg_name_conflict(self):
-        pkg = copy.copy(self.pkg3.data)
+        pkg = copy.deepcopy(self.pkg3.data)
         pkg['name'] = 'package-1'
         res = self.test_app.post_json(
             '/packages', pkg,
@@ -1112,12 +1203,68 @@ class FunctionalTestsWithPkg(unittest.TestCase):
         self.assertEqual(Messages.pkg_name_conflict, res.json['message'])
 
     def test_crt_pkg_name_bad(self):
-        pkg = copy.copy(self.pkg3.data)
+        pkg = copy.deepcopy(self.pkg3.data)
         pkg['name'] = 'hi.there'
         res = self.test_app.post_json(
             '/packages', pkg,
             headers=self.auth_headers, status=400)
         self.assertEqual(Messages.pkg_bad_name, res.json['message'])
+
+    def test_crt_pkg_bad_filename(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['versions']['1.1.0']['files']['http://example.com/file34'] = {
+            'name': 'test/test-3-file-4',
+            'dir': '/bin'
+        }
+        res = self.test_app.post_json(
+            '/packages', pkg,
+            headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.bad_path, res.json['message'])
+
+    def test_crt_pkg_no_path(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['versions']['1.1.0']['files']['http://example.com/file34'] = {}
+        self.test_app.post_json(
+            '/packages', pkg,
+            headers=self.auth_headers, status=400)
+
+    def test_crt_pkg_bad_path(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['versions']['1.1.0']['files']['http://example.com/file34'] = {
+            'path': '/hey/there/path/'
+        }
+        res = self.test_app.post_json(
+            '/packages', pkg,
+            headers=self.auth_headers, status=400)
+        self.assertEqual(Messages.bad_path, res.json['message'])
+
+    def test_crt_pkg_path(self):
+        pkg = copy.deepcopy(self.pkg3.data)
+        pkg['versions']['1.1.0']['files']['http://example.com/file34'] = {
+            'path': 'bin/test-3-file-4'
+        }
+        self.test_app.post_json(
+            '/packages', pkg,
+            headers=self.auth_headers, status=201)
+        res = self.test_app.get('/packages/package-3', status=200)
+        self.assertEqual((res.json['data']['versions']['1.1.0']['files']
+                          ['http://example.com/file34']['path']),
+                         '/bin/test-3-file-4')
+        self.assertEqual((res.json['data']['versions']['1.1.0']['files']
+                          ['http://example.com/file34']['dir']),
+                         '/bin')
+        self.assertEqual((res.json['data']['versions']['1.1.0']['files']
+                          ['http://example.com/file34']['name']),
+                         'test-3-file-4')
+
+    def test_crt_pkg_convert_path(self):
+        self.test_app.post_json(
+            '/packages', self.pkg3.data,
+            headers=self.auth_headers, status=201)
+        res = self.test_app.get('/packages/package-3', status=200)
+        self.assertEqual((res.json['data']['versions']['1.1.0']['files']
+                          ['http://example.com/file34']['path']),
+                         '/bin/test-3-file-4')
 
     def test_lst_pkgs_no_params(self):
         res = self.test_app.get('/packages', {

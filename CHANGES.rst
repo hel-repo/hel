@@ -1,3 +1,7 @@
+3.3.0
+-----
+- Added ``versions.files.path``, deprected ``versions.files.dir`` and ``versions.files.name``.
+
 3.2.0
 -----
 - Made it possible to change user password.

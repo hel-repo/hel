@@ -27,3 +27,4 @@ class Messages:
     type_mismatch = 'Wrong value for param "%s" given: expected %s!'
     user_bad_name = 'The nickname contains illegal characters.'
     wrong_dep_type = 'Unknown dependency type.'
+    bad_path = 'Bad path given.'
