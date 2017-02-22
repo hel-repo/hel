@@ -429,7 +429,7 @@ def get_package(context, request):
         })
         updated = False
         for num, ver in r['versions'].items():  # pragma: no cover
-            for url, f in ver['files']:
+            for url, f in ver['files'].items():
                 if 'path' not in f:
                     r['versions'][num]['files'][url]['path'] = (
                         os.path.normpath(os.path.join(
