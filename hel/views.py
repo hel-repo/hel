@@ -427,6 +427,19 @@ def get_package(context, request):
                 'stats.views': 1
             }
         })
+        updated = False
+        for num, ver in r['versions'].items():  # pragma: no cover
+            for url, f in ver['files']:
+                if 'path' not in f:
+                    r['versions'][num]['files'][url]['path'] = (
+                        os.path.normpath(os.path.join(
+                            '/',
+                            r['versions'][num]['files'][url]['dir'],
+                            r['versions'][num]['files'][url]['name'])))
+                    updated = True
+        if updated:  # pragma: no cover
+            context.update(r, True)
+            r = context.retrieve()
         del r['_id']
         raise HTTPOk(
             body=replace_chars_in_keys(r, Constants.key_replace_char, '.'))
