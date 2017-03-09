@@ -1,3 +1,7 @@
+3.3.1
+-----
+- Fixed the issue in ``list_users`` where only the left-most digit of ``offset`` was read.
+
 3.3.0
 -----
 - Added ``versions.files.path``, deprected ``versions.files.dir`` and ``versions.files.name``.
