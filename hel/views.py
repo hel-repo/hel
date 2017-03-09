@@ -493,7 +493,7 @@ def list_packages(context, request):
     offset = 0
     length = request.registry.settings['controllers.packages.list_length']
     if 'offset' in params:
-        offset = params.pop('offset')[0]
+        offset = params.pop('offset')
     try:
         offset = int(offset)
     except ValueError:
@@ -606,7 +606,7 @@ def list_users(context, request):
     offset = 0
     length = request.registry.settings['controllers.users.list_length']
     if 'offset' in params:
-        offset = params.pop('offset')[0]
+        offset = params.pop('offset')
     try:
         offset = int(offset)
     except:
