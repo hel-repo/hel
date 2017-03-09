@@ -493,7 +493,7 @@ def list_packages(context, request):
     offset = 0
     length = request.registry.settings['controllers.packages.list_length']
     if 'offset' in params:
-        offset = params.pop('offset')
+        offset = params.pop('offset')[0]
     try:
         offset = int(offset)
     except ValueError:
@@ -602,16 +602,15 @@ def create_user(context, request):
              context=Users,
              permission='user_list')
 def list_users(context, request):
-    params = request.GET
+    params = request.GET.dict_of_lists()
     offset = 0
     length = request.registry.settings['controllers.users.list_length']
     if 'offset' in params:
-        offset = params.pop('offset')
+        offset = params.pop('offset')[0]
     try:
         offset = int(offset)
     except:
         offset = 0
-    params = params.dict_of_lists()
     groups = None
     if 'groups' in params:
         groups = params['groups']
