@@ -135,7 +135,9 @@ class ModelUser:
             'password': '',
             'email': '',
             'activation_phrase': '',
-            'activation_till': ''
+            'activation_till': '',
+            # TODO: remove in hel@4.0.0
+            'salted': True
         }
 
         if strict:

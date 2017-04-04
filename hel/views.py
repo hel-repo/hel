@@ -24,7 +24,7 @@ import semantic_version as semver
 
 from hel.resources import Package, Packages, User, Users
 from hel.utils import update
-from hel.utils.authentication import has_permission
+from hel.utils.authentication import has_permission, salt
 from hel.utils.constants import Constants
 from hel.utils.messages import Messages
 from hel.utils.models import ModelPackage, ModelUser
@@ -83,7 +83,8 @@ def auth(request):
     email = ''
     try:
         params = request.json_body
-    except:
+    except Exception as e:
+        log.exception('1')
         raise HTTPBadRequest(detail=Messages.bad_request)
     if 'action' not in params:
         raise HTTPBadRequest(detail=Messages.bad_request)
@@ -106,13 +107,32 @@ def auth(request):
             raise HTTPBadRequest(detail=Messages.empty_nickname)
         if password == '':
             raise HTTPBadRequest(detail=Messages.empty_password)
-        pass_hash = hashlib.sha512(password.encode()).hexdigest()
         user = request.db['users'].find_one({'nickname': nickname})
         if not user:
             raise HTTPBadRequest(detail=Messages.failed_login)
-        correct_hash = user['password']
-        if pass_hash != correct_hash:
-            raise HTTPBadRequest(detail=Messages.failed_login)
+
+        if 'salted' not in user or not user['salted']:  # pragma: no cover
+            correct_hash = user['password']
+            pass_hash = hashlib.sha512(password.encode()).hexdigest()
+            if pass_hash != correct_hash:
+                raise HTTPBadRequest(  # pragma: no cover
+                    detail=Messages.failed_login)
+
+            salted = salt(request, password, nickname)
+            request.db['users'].find_one_and_update({
+                    'nickname': nickname
+                }, {
+                    '$set': {
+                        'salted': True,
+                        'password': salted
+                    }
+                })
+        else:
+            correct_hash = user['password']
+            pass_hash = salt(request, password, nickname)
+            if pass_hash != correct_hash:
+                raise HTTPBadRequest(detail=Messages.failed_login)
+
         headers = remember(request, nickname)
         raise HTTPOk(body=Messages.logged_in, headers=headers)
     elif params['action'] == 'register':
@@ -128,18 +148,21 @@ def auth(request):
             raise HTTPBadRequest(detail=Messages.empty_email)
         if password == '':
             raise HTTPBadRequest(detail=Messages.empty_password)
-        pass_hash = hashlib.sha512(password.encode()).hexdigest()
         user = request.db['users'].find_one({'nickname': nickname})
         if user:
             raise HTTPBadRequest(detail=Messages.nickname_in_use)
         user = request.db['users'].find_one({'email': email})
         if user:
             raise HTTPBadRequest(detail=Messages.email_in_use)
+
+        pass_hash = salt(request, password, nickname)
+
         act_phrase = ''.join('{:02x}'.format(x) for x in os.urandom(
             request.registry.settings
             ['activation.length']))
         act_till = (datetime.datetime.now() + datetime.timedelta(
             seconds=request.registry.settings['activation.time']))
+
         subrequest = Request.blank('/users', method='POST', POST=(
                 str(ModelUser(nickname=nickname,
                               email=email,
@@ -148,6 +171,7 @@ def auth(request):
                               activation_till=act_till))),
             content_type='application/json')
         subrequest.no_permission_check = True
+
         response = request.invoke_subrequest(subrequest, use_tweens=True)
         if response.status_code == 201:
             # TODO: send activation email
@@ -550,7 +574,7 @@ def update_user(context, request):
             # TODO: send email
             if v == '':
                 raise HTTPBadRequest(detail=Messages.empty_password)
-            pass_hash = hashlib.sha512(v.encode()).hexdigest()
+            pass_hash = salt(request, v, context.retrieve()['nickname'])
             query[k] = pass_hash
     query = update(old, query)
     context.update(query, True)
