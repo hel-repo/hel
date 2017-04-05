@@ -9,6 +9,7 @@
   - Updated user update view to salt password when changing it.
 
 - Configured logging in ``development.ini``.
+- Increased the maximum length of short description to 300 characters.
 
 3.3.1
 -----

@@ -219,7 +219,7 @@ def update_package(context, request):
         elif k == 'short_description':
             query[k] = check(
                 v, str,
-                Messages.type_mismatch % (k, 'str',))[:120]
+                Messages.type_mismatch % (k, 'str',))[:Constants.sdesc_len]
         elif k == 'owners':
             check_list_of_strs(
                 v, Messages.type_mismatch % (k, 'list of strs',))

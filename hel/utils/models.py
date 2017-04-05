@@ -111,7 +111,7 @@ class ModelPackage:
                 self.data[k] = {parse_url(str(url)): str(desc)
                                 for url, desc in v.items()}
             elif k == 'short_description':
-                self.data[k] = str(v)[:140]
+                self.data[k] = str(v)[:Constants.sdesc_len]
 
     @property
     def json(self):

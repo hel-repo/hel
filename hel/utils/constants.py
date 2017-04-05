@@ -16,3 +16,6 @@ class Constants:
     user_pattern = re.compile('^[A-Za-z0-9-_]+$')
 
     date_format = '%Y-%m-%d %H:%M:%S'
+
+    # The maximum length of short description
+    sdesc_len = 300
