@@ -110,6 +110,11 @@ def main(global_config, **settings):
     settings['controllers.users.list_length'] = int(settings.get(
         'controllers.users.list_length', '20'))
 
+    settings['authentication.salt'] = (b'\xc4x\xc1\x1a\x0f\xa5$\xb1\x95AT\x03'
+                                       b'\x8d\x03bk\xfc\xe9\x1c\x88')
+    if 'AUTH_SALT' in os.environ:
+        settings['authentication.salt'] = os.environ['AUTH_SALT'].encode()
+
     config = Configurator(settings=settings, root_factory=Root)
 
     config.add_route_predicate('cors_preflight', CorsPreflightPredicate)

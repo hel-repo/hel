@@ -1,3 +1,21 @@
+3.4.0
+-----
+- Salt passwords.
+
+  - Added ``user.salted`` field.
+  - Updated auth view to salt passwords when signing up.
+  - Updated auth view to replace old passwords in the database when logging in.
+  - Updated auth view to properly check for password validity.
+  - Updated user update view to salt password when changing it.
+
+- Configured logging in ``development.ini``.
+- Increased the maximum length of short description to 300 characters.
+- Forbade using uppercase characters in package names.
+
+3.3.1
+-----
+- Fixed the issue in ``list_users`` where only the left-most digit of ``offset`` was read.
+
 3.3.0
 -----
 - Added ``versions.files.path``, deprected ``versions.files.dir`` and ``versions.files.name``.

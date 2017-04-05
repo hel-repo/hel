@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import hashlib
+
 from pyramid.authentication import AuthTktAuthenticationPolicy as Policy
 from pyramid.httpexceptions import HTTPForbidden
 from pyramid.security import ACLAllowed, Everyone, Authenticated
@@ -75,3 +77,10 @@ def has_permission(request, permission, context=None):
     if request.has_permission(permission, context):
         return True
     raise HTTPForbidden
+
+
+def salt(request, password, username):
+    hash_data = (username.encode() +
+                 request.registry.settings['authentication.salt'] +
+                 password.encode())
+    return hashlib.sha512(hash_data).hexdigest()

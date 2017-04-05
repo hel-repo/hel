@@ -3,7 +3,7 @@ import copy
 import json
 
 
-VERSION = '3.3.0'
+VERSION = '3.4.0'
 
 
 def parse_search_phrase(s):
