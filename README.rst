@@ -19,7 +19,7 @@ Dev branch: |travis-ci-dev|
 Getting Started - Usage
 -----------------------
 Just open this link in your favorite browser:
-https://hel-roottree.rhcloud.com/
+https://api.fomalhaut.me/
 
 Getting Started - Dev
 ---------------------
