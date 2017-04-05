@@ -10,6 +10,7 @@
 
 - Configured logging in ``development.ini``.
 - Increased the maximum length of short description to 300 characters.
+- Forbade using uppercase characters in package names.
 
 3.3.1
 -----

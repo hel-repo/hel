@@ -21,7 +21,8 @@ class Messages:
     no_values = 'No values given for %s.'
     partial_ver = 'Version data you provided was partial.'
     password_mismatch = 'Passwords do not match.'
-    pkg_bad_name = 'The name contains illegal characters.'
+    pkg_bad_name = ('The name contains illegal characters. Allowed are: '
+                    'lowercase alphabetic characters, numbers and a dash (-).')
     pkg_name_conflict = 'The name is already used by other package.'
     too_many_values = 'Too many values (%s expected, got %s).'
     type_mismatch = 'Wrong value for param "%s" given: expected %s!'
